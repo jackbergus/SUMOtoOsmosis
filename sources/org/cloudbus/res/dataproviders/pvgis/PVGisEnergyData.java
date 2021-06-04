@@ -1,6 +1,6 @@
-package org.cloudbus.res.model.dataproviders.pvgis;
+package org.cloudbus.res.dataproviders.pvgis;
 
-import org.cloudbus.res.model.dataproviders.EnergyData;
+import org.cloudbus.res.dataproviders.EnergyData;
 
 public class PVGisEnergyData implements EnergyData {
     //TODO: implement this

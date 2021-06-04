@@ -1,7 +1,7 @@
 package org.cloudbus.res.model;
 
 import lombok.Data;
-import org.cloudbus.res.model.dataproviders.EnergyData;
+import org.cloudbus.res.dataproviders.EnergyData;
 
 /**
  * Abstract class that provides template for renewable energy sources which dataCenter can contain.

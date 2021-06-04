@@ -1,4 +1,4 @@
-package org.cloudbus.res.model.dataproviders;
+package org.cloudbus.res.dataproviders;
 
 /**
  * Class that would hold energy data (power units in specific time) for energy source

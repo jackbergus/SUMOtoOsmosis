@@ -5,6 +5,7 @@ import lombok.Data;
 import org.cloudbus.res.model.PowerGrid;
 import org.cloudbus.res.model.RenewableEnergySource;
 import org.cloudbus.res.model.storage.EnergyStorage;
+import org.cloudbus.res.policies.EnergyManagementPolicy;
 
 import java.util.List;
 
@@ -19,6 +20,5 @@ public class EnergyController {
     private List<RenewableEnergySource> energySources;
     private List<EnergyStorage> energyStorages;
     private List<PowerGrid> powerGrids;
-    //TODO: implement policies
-//    private EnergyManagmentPolicy policy;
+    private EnergyManagementPolicy policy;
 }
