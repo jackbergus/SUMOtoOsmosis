@@ -93,10 +93,10 @@
           "currentEnergy": "??"
         }
       ],
-      "PowerGrd": [
+      "PowerGrid": [
         {
           "country": "Poland",
-          "priceForEnergy": "??"
+          "priceForEnergy": "0.4"
         }
       ],
       "EnergySources": [
@@ -112,7 +112,7 @@
         },
         {
           "name": "PV_panels_2",
-          "type": "BAD_TYPE",
+          "type": "PV_PANELS",
           "loss": 5,
           "peakPower": 60,
           "location": {
