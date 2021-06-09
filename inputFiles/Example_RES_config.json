@@ -1,0 +1,127 @@
+{
+  "simulationDate": "2016-05-04",
+  "edgeDatacenters": [
+    {
+      "name": "Edge_1",
+      "type": "edge",
+      "EnergyAllocationPolicy": {
+        "className": "someEnergyManagementPolicy"
+      },
+      "EnergyStorage": [
+        {
+          "type": "BATTERY",
+          "capacity": "100",
+          "currentEnergy": "20"
+        }
+      ],
+      "PowerGrid": [
+        {
+          "country": "Poland",
+          "priceForEnergy": "0.2"
+        }
+      ],
+      "EnergySources": [
+        {
+          "name": "PV_panels_1",
+          "type": "PV_PANELS",
+          "technology": "CIS",
+          "peakPower": 200,
+          "loss": 20,
+          "location": {
+            "latitude": 50.0,
+            "longitude": 20.0,
+            "elevation": 0.0
+          }
+        },
+        {
+          "name": "PV_panels_2",
+          "type": "PV_PANELS",
+          "angle": "70",
+          "location": {
+            "latitude": 30.0,
+            "longitude": 10.5,
+            "elevation": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edge_2",
+      "type": "edge",
+      "EnergyAllocationPolicy": {
+        "className": "someEnergyManagementPolicy"
+      },
+      "EnergyStorage": [
+        {
+          "type": "BATTERY",
+          "capacity": "100",
+          "currentEnergy": "20"
+        }
+      ],
+      "PowerGrid": [
+        {
+          "country": "Ukraine",
+          "priceForEnergy": "0.5"
+        }
+      ],
+      "EnergySources": [
+        {
+          "name": "PV_panels_1",
+          "type": "PV_PANELS",
+          "peakPower": 100,
+          "loss": 10,
+          "location": {
+            "latitude": 10.0,
+            "longitude": 43.4,
+            "elevation": 0.0
+          }
+        }
+      ]
+    }
+  ],
+  "cloudDatacenters": [
+    {
+      "name": "cloud_1",
+      "type": "cloud",
+      "vmAllocationPolicy": {
+        "className": "VmAllocationPolicyCombinedLeastFullFirst"
+      },
+      "EnergyStorage": [
+        {
+          "type": "??",
+          "capacity": "??",
+          "currentEnergy": "??"
+        }
+      ],
+      "PowerGrd": [
+        {
+          "country": "Poland",
+          "priceForEnergy": "??"
+        }
+      ],
+      "EnergySources": [
+        {
+          "name": "PV_panels_1",
+          "type": "PV_PANELS",
+          "peakPower": 70,
+          "location": {
+            "latitude": 30.0,
+            "longitude": 24.1,
+            "elevation": 0.0
+          }
+        },
+        {
+          "name": "PV_panels_2",
+          "type": "BAD_TYPE",
+          "loss": 5,
+          "peakPower": 60,
+          "location": {
+            "latitude": 20.7,
+            "longitude": 7.4,
+            "elevation": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}
