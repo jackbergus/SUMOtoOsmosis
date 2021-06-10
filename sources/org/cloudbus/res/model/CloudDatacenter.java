@@ -1,11 +1,13 @@
 package org.cloudbus.res.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import org.cloudbus.res.model.storage.EnergyStorage;
 import org.cloudbus.res.policies.VmAllocationPolicy;
 
 import java.util.List;
 
+@Data
 public class CloudDatacenter {
     public String name;
     public String type;
