@@ -17,5 +17,5 @@ public class CloudDatacenter {
     @JsonProperty("PowerGrid")
     public List<PowerGrid> powerGrid;
     @JsonProperty("EnergySources")
-    public List<EnergySource> energySources;
+    public List<RenewableEnergySource> energySources;
 }

@@ -88,9 +88,9 @@
       },
       "EnergyStorage": [
         {
-          "type": "??",
-          "capacity": "??",
-          "currentEnergy": "??"
+          "type": "BATTERY",
+          "capacity": "500",
+          "currentEnergy": "10"
         }
       ],
       "PowerGrid": [
