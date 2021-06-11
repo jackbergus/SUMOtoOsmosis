@@ -1,7 +1,10 @@
 package org.cloudbus.res.model.pvgis.input;
 
+import lombok.Data;
+
+@Data
 public class Fixed {
-    public Slope slope;
-    public Azimuth azimuth;
-    public String type;
+    private Slope slope;
+    private Azimuth azimuth;
+    private String type;
 }

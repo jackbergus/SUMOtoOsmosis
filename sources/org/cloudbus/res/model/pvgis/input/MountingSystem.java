@@ -1,8 +1,11 @@
 package org.cloudbus.res.model.pvgis.input;
 
+import lombok.Data;
+
+@Data
 public class MountingSystem {
-    public Fixed fixed;
-    public String description;
-    public String choices;
-    public Fields fields;
+    private Fixed fixed;
+    private String description;
+    private String choices;
+    private Fields fields;
 }

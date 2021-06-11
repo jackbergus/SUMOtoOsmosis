@@ -1,8 +1,11 @@
 package org.cloudbus.res.model.pvgis.input;
 
+import lombok.Data;
+
+@Data
 public class Slope {
-    public int value;
-    public boolean optimal;
-    public String description;
-    public String units;
+    private int value;
+    private boolean optimal;
+    private String description;
+    private String units;
 }

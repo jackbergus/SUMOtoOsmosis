@@ -1,8 +1,11 @@
 package org.cloudbus.res.model.pvgis.input;
 
+import lombok.Data;
+
+@Data
 public class PvModule {
-    public String technology;
-    public double peak_power;
-    public double system_loss;
-    public String description;
+    private String technology;
+    private double peak_power;
+    private double system_loss;
+    private String description;
 }

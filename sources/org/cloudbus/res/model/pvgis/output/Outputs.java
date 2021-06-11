@@ -1,7 +1,9 @@
 package org.cloudbus.res.model.pvgis.output;
 
-import java.util.List;
+import lombok.Data;
 
+import java.util.List;
+@Data
 public class Outputs {
-    public List<Hourly> hourly;
+    private List<Hourly> hourly;
 }

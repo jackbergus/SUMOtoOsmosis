@@ -5,8 +5,8 @@ import org.cloudbus.res.model.Location;
 
 @Data
 public class Inputs {
-    public Location location;
-    public MeteoData meteo_data;
-    public MountingSystem mounting_system;
-    public PvModule pv_module;
+    private Location location;
+    private MeteoData meteo_data;
+    private MountingSystem mounting_system;
+    private PvModule pv_module;
 }

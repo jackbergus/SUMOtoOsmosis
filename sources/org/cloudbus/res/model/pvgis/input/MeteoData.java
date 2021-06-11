@@ -5,11 +5,11 @@ import lombok.Data;
 
 @Data
 public class MeteoData {
-    public String radiation_db;
-    public String meteo_db;
-    public int year_min;
-    public int year_max;
-    public boolean use_horizon;
-    public Object horizon_db;
-    public String horizon_data;
+    private String radiation_db;
+    private String meteo_db;
+    private int year_min;
+    private int year_max;
+    private boolean use_horizon;
+    private Object horizon_db;
+    private String horizon_data;
 }

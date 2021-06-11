@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class Fields {
-    public Slope slope;
-    public Azimuth azimuth;
+    private Slope slope;
+    private Azimuth azimuth;
 }
