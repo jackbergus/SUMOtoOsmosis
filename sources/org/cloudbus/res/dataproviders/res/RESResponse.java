@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 public class RESResponse {
-    public String simulationDate;
-    public List<EdgeDatacenter> edgeDatacenters;
-    public List<CloudDatacenter> cloudDatacenters;
+    private String simulationDate;
+    private List<EdgeDatacenter> edgeDatacenters;
+    private List<CloudDatacenter> cloudDatacenters;
 }

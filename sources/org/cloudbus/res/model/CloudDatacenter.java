@@ -9,13 +9,13 @@ import java.util.List;
 
 @Data
 public class CloudDatacenter {
-    public String name;
-    public String type;
-    public VmAllocationPolicy vmAllocationPolicy;
+    private String name;
+    private String type;
+    private VmAllocationPolicy vmAllocationPolicy;
     @JsonProperty("EnergyStorage")
-    public List<EnergyStorage> energyStorage;
+    private List<EnergyStorage> energyStorage;
     @JsonProperty("PowerGrid")
-    public List<PowerGrid> powerGrid;
+    private List<PowerGrid> powerGrid;
     @JsonProperty("EnergySources")
-    public List<RenewableEnergySource> energySources;
+    private List<RenewableEnergySource> energySources;
 }

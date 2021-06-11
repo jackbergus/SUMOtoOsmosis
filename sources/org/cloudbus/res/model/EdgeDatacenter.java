@@ -8,14 +8,14 @@ import java.util.List;
 
 @Data
 public class EdgeDatacenter {
-    public String name;
-    public String type;
+    private String name;
+    private String type;
     @JsonProperty("EnergyAllocationPolicy")
-    public EnergyAllocationPolicy energyAllocationPolicy;
+    private EnergyAllocationPolicy energyAllocationPolicy;
     @JsonProperty("EnergyStorage")
-    public List<EnergyStorage> energyStorage;
+    private List<EnergyStorage> energyStorage;
     @JsonProperty("PowerGrid")
-    public List<PowerGrid> powerGrid;
+    private List<PowerGrid> powerGrid;
     @JsonProperty("EnergySources")
-    public List<RenewableEnergySource> energySources;
+    private List<RenewableEnergySource> energySources;
 }
