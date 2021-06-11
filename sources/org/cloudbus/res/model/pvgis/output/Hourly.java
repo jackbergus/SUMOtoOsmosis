@@ -1,14 +1,21 @@
 package org.cloudbus.res.model.pvgis.output;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.cloudbus.res.config.AppConfig;
+
+import java.beans.ConstructorProperties;
+import java.time.LocalDateTime;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Hourly {
-    private String time;
-    @JsonProperty("G(i)")
-    private double gI;
+    private LocalDateTime dateTime;
+    private double systemPower;
 
+    @ConstructorProperties({"time", "P"})
+    public Hourly(String dateTime, double systemPower) {
+        this.dateTime = LocalDateTime.parse(dateTime, AppConfig.FORMATTER);
+        this.systemPower = systemPower;
+    }
 }
