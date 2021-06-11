@@ -1,18 +1,24 @@
 package org.cloudbus.res.model.pvpanel;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.cloudbus.res.model.RenewableEnergySource;
 
+import java.beans.ConstructorProperties;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class PVInstallation extends RenewableEnergySource {
-    @JsonProperty("technology")
     private PVTechnology pvTechnology;
-    @JsonProperty("angle")
     private double tiltAngle;
     private int peakPower;
-    @JsonProperty("loss")
     private double systemLoss;
+
+    @ConstructorProperties({"technology", "angle", "peakPower", "loss"})
+    public PVInstallation(PVTechnology pvTechnology, double tiltAngle, int peakPower, double systemLoss) {
+        this.pvTechnology = pvTechnology == null ? PVTechnology.CRYSTALLINE_SILICON : pvTechnology;
+        this.tiltAngle = tiltAngle;
+        this.peakPower = peakPower;
+        this.systemLoss = systemLoss;
+    }
 }

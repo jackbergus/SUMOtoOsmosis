@@ -1,5 +1,8 @@
 package org.cloudbus.res.policies;
 
+import lombok.Data;
+
+@Data
 public class EnergyManagementPolicy {
-    //TODO: implement this
+    private String className;
 }
