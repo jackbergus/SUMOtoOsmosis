@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.cloudbus.cloudsim.Log;
@@ -94,10 +96,9 @@ public class OsmesisExample_1 {
 		osmesisBroker.submitOsmesisApps(OsmesisAppsParser.appList);
 		osmesisBroker.setDatacenters(topologyBuilder.getOsmesisDatacentres());
 
-		RESResponse resResponse = AppConfig.RES_PARSER.parse(RES_CONFIG_FILE);
-		List<EnergyController> energyControllers = getEnergyControllers(resResponse);
+		Map<String, EnergyController> energyControllers = getEnergyControllers();
 		System.out.println(energyControllers);
-		
+
 		double startTime = CloudSim.startSimulation();
   
 		LogUtil.simulationFinished();
@@ -119,11 +120,12 @@ public class OsmesisExample_1 {
 
 	}
 
-	private List<EnergyController> getEnergyControllers(RESResponse resResponse) {
+	private Map<String, EnergyController> getEnergyControllers() throws IOException {
+		RESResponse resResponse = AppConfig.RES_PARSER.parse(RES_CONFIG_FILE);
 		return resResponse.getDatacenters()
 				.stream()
 				.map(EnergyController::fromDatacenter)
-				.collect(Collectors.toList());
+				.collect(Collectors.toMap(EnergyController::getEdgeDatacenterId, Function.identity()));
 	}
 
 	private ConfiguationEntity buildTopologyFromFile(String filePath) throws Exception {
