@@ -5,8 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
+import org.cloudbus.res.config.AppConfig;
 import org.cloudbus.res.dataproviders.EnergyData;
 import org.cloudbus.res.model.pvpanel.PVInstallation;
+
+import java.io.IOException;
 
 /**
  * Abstract class that provides template for renewable energy sources which dataCenter can contain.
@@ -32,5 +35,13 @@ public abstract class RenewableEnergySource {
     // change input depends on energy data implementations
     int getCurrentPower(long timestamp) {
         return energyData.getCurrentPower(timestamp);
+    }
+
+    public void setEnergyData(String fileNameForData) {
+        try {
+            this.energyData = AppConfig.PVGIS_PARSER.parse(fileNameForData);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
@@ -35,6 +36,9 @@ import org.cloudbus.osmosis.core.OsmosisOrchestrator;
 import org.cloudbus.osmosis.core.SDNController;
 
 import org.cloudbus.osmosis.core.OsmesisAppsParser;
+import org.cloudbus.res.EnergyController;
+import org.cloudbus.res.config.AppConfig;
+import org.cloudbus.res.dataproviders.res.RESResponse;
 
 /**
  * 
@@ -47,6 +51,7 @@ import org.cloudbus.osmosis.core.OsmesisAppsParser;
 public class OsmesisExample_1 {
 	public static final String configurationFile = "inputFiles/Example1_configuration.json";
 	public static final String osmesisAppFile =  "inputFiles/Example1_Worload.csv";
+	public static final String RES_CONFIG_FILE =  "inputFiles/Example_RES_config.json";
     OsmosisBuilder topologyBuilder;
 	OsmesisBroker osmesisBroker;
 	List<OsmesisDatacenter> datacenters;
@@ -88,6 +93,10 @@ public class OsmesisExample_1 {
 		maestro.setSdnControllers(controllers);
 		osmesisBroker.submitOsmesisApps(OsmesisAppsParser.appList);
 		osmesisBroker.setDatacenters(topologyBuilder.getOsmesisDatacentres());
+
+		RESResponse resResponse = AppConfig.RES_PARSER.parse(RES_CONFIG_FILE);
+		List<EnergyController> energyControllers = getEnergyControllers(resResponse);
+		System.out.println(energyControllers);
 		
 		double startTime = CloudSim.startSimulation();
   
@@ -109,8 +118,15 @@ public class OsmesisExample_1 {
 		Log.printLine("Simulation Finished!");
 
 	}
-	
-    private ConfiguationEntity buildTopologyFromFile(String filePath) throws Exception {
+
+	private List<EnergyController> getEnergyControllers(RESResponse resResponse) {
+		return resResponse.getDatacenters()
+				.stream()
+				.map(EnergyController::fromDatacenter)
+				.collect(Collectors.toList());
+	}
+
+	private ConfiguationEntity buildTopologyFromFile(String filePath) throws Exception {
         System.out.println("Creating topology from file " + filePath);
         ConfiguationEntity conf  = null;
         try (FileReader jsonFileReader = new FileReader(filePath)){
