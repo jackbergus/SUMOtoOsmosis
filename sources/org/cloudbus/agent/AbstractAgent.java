@@ -1,4 +1,4 @@
-package org.cloudbus.res.model.agent;
+package org.cloudbus.agent;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,4 +1,4 @@
-package org.cloudbus.res.model.agent;
+package org.cloudbus.agent;
 
 import org.cloudbus.cloudsim.edge.iot.IoTDevice;
 
