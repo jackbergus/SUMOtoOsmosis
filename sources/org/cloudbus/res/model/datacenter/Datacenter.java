@@ -34,6 +34,7 @@ public abstract class Datacenter {
     private String name;
     private String type;
     private EnergyManagementPolicy energyManagementPolicy;
+    private float utilization;
     private List<EnergyStorage> energyStorage;
     private List<PowerGrid> powerGrid;
     private List<RenewableEnergySource> energySources;

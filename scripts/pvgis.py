@@ -16,7 +16,7 @@ def reset_params():
 
 
 def parse_arguments():
-    if len(sys.argv) < 1:
+    if len(sys.argv) < 2:
         print(
             "Error: please provide input file with datacenters configuration.\n Ex: python pvgis_script.py config.json")
         sys.exit(1)
@@ -50,14 +50,15 @@ def fetch_data_from_pvgis(source, year):
 
 def write_pvgis_data_to_file(datacenter_name, energy_source_name, content, date):
     filename = f'{datacenter_name}-{energy_source_name}-{date}.json'
-    dic_path = "inputFiles/pvgis"
+    #dic_path = "inputFiles/pvgis"
+    dic_path = "."
     with open(os.path.join(dic_path, filename), 'wb+') as f:
         f.write(content)
 
 
 def parse_datacenter(datacenter, simulation_year):
     datacenter_name = datacenter['name']
-    energy_sources = datacenter['EnergySources']
+    energy_sources = datacenter['energySources']
     for energy_source in energy_sources:
         content = fetch_data_from_pvgis(energy_source, simulation_year)
         write_pvgis_data_to_file(datacenter_name, energy_source['name'], content, simulation_year)
@@ -67,7 +68,7 @@ def read_config_file(json_file):
     with open(json_file) as file:
         data = json.load(file)
 
-    simulation_year = str(data['simulationDate']).split("-", 1)[0]
+    simulation_year = str(data['simulationDate']).split(":", 1)[0][:-4]
     for datacenter in data['edgeDatacenters']:
         parse_datacenter(datacenter, simulation_year)
     for datacenter in data['cloudDatacenters']:

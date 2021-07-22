@@ -5,8 +5,9 @@
       "name": "Edge_1",
       "type": "edge",
       "energyManagementPolicy": {
-        "className": "someEnergyManagementPolicy"
+        "className": "exportLimitEnergyManagementPolicy"
       },
+      "utilization" : "50",
       "energyStorage": [
         {
           "type": "BATTERY",
@@ -52,8 +53,9 @@
       "name": "Edge_2",
       "type": "edge",
       "energyManagementPolicy": {
-        "className": "someEnergyManagementPolicy"
+        "className": "exportLimitEnergyManagementPolicy"
       },
+      "utilization" : "50",
       "energyStorage": [
         {
           "type": "BATTERY",
@@ -85,11 +87,12 @@
   ],
   "cloudDatacenters": [
     {
-      "name": "cloud_1",
+      "name": "Cloud_1",
       "type": "cloud",
       "energyManagementPolicy": {
-        "className": "someEnergyManagementPolicy"
+        "className": "exportLimitEnergyManagementPolicy"
       },
+      "utilization" : "40",
       "energyStorage": [
         {
           "type": "BATTERY",

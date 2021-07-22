@@ -32,8 +32,9 @@ public abstract class RenewableEnergySource {
     private EnergySourceType energySourceType;
     @JsonIgnore
     private EnergyData energyData;
+
     // change input depends on energy data implementations
-    int getCurrentPower(long timestamp) {
+    double getCurrentPower(long timestamp) {
         return energyData.getCurrentPower(timestamp);
     }
 

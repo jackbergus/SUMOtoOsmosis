@@ -7,6 +7,7 @@ import org.cloudbus.res.model.datacenter.Datacenter;
 import org.cloudbus.res.model.storage.EnergyStorage;
 import org.cloudbus.res.policies.EnergyManagementPolicy;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -20,6 +21,7 @@ public class EnergyController {
     private List<EnergyStorage> energyStorages;
     private List<PowerGrid> powerGrids;
     private EnergyManagementPolicy policy;
+    private Double utilization;
 
     public static EnergyController fromDatacenter(Datacenter datacenter) {
         return new EnergyController(
@@ -27,15 +29,34 @@ public class EnergyController {
                 datacenter.getEnergySources(),
                 datacenter.getEnergyStorage(),
                 datacenter.getPowerGrid(),
-                datacenter.getEnergyManagementPolicy()
+                datacenter.getEnergyManagementPolicy(),
+                datacenter.getUtilization()
         );
     }
 
-    private EnergyController(String edgeDatacenterId, List<RenewableEnergySource> energySources, List<EnergyStorage> energyStorages, List<PowerGrid> powerGrids, EnergyManagementPolicy policy) {
+    private EnergyController(String edgeDatacenterId, List<RenewableEnergySource> energySources, List<EnergyStorage> energyStorages, List<PowerGrid> powerGrids, EnergyManagementPolicy policy, double utilization) {
         this.edgeDatacenterId = edgeDatacenterId;
         this.energySources = energySources;
         this.energyStorages = energyStorages;
         this.powerGrids = powerGrids;
         this.policy = policy;
+        this.utilization = utilization;
     }
+
+    public double getRESCurrentPower(long timestamp) {
+        double power=0.0;
+        for(RenewableEnergySource source:energySources){
+            power += source.getEnergyData().getCurrentPower(timestamp);
+        }
+        return power;
+    }
+
+    public double getRESCurrentPower(LocalDateTime time) {
+        double power=0.0;
+        for(RenewableEnergySource source:energySources){
+            power += source.getEnergyData().getCurrentPower(time);
+        }
+        return power;
+    }
+
 }

@@ -19,6 +19,7 @@ import org.cloudbus.cloudsim.edge.core.edge.MEL;
 import org.cloudbus.cloudsim.edge.utils.LogUtil;
 import org.cloudbus.cloudsim.osmesis.examples.uti.LogPrinter;
 import org.cloudbus.cloudsim.osmesis.examples.uti.PrintResults;
+import org.cloudbus.cloudsim.osmesis.examples.uti.RESPrinter;
 import org.cloudbus.cloudsim.sdn.Switch;
 import org.cloudbus.osmosis.core.*;
 import org.cloudbus.res.EnergyController;
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class RES_example1 {
     public static final String configurationFile = "inputFiles/res/RES_example1_infrastructure.json";
-    public static final String osmesisAppFile =  "inputFiles/res/RES_example1_workload.csv";
+    public static final String osmesisAppFile =  "inputFiles/res/RES_example1_workload_single_day.csv";
     public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example1_energy_config.json";
 
     OsmosisBuilder topologyBuilder;
@@ -104,6 +105,13 @@ public class RES_example1 {
         Log.printLine();
         Log.printLine("Simulation Finished!");
 
+        Log.printLine();
+        Log.printLine("Post-mortem RES energy analysis!");
+        RESPrinter res_printer = new RESPrinter();
+        res_printer.PostMortemAnalysis(energyControllers,"20160101:0000", true,3600);
+        res_printer.PostMortemAnalysis(energyControllers,"20160501:0000", false, 3600);
+        res_printer.PostMortemAnalysis(energyControllers,"20160901:0000", false, 3600);
+        Log.printLine("End of RES analysis!");
     }
 
     private Map<String, EnergyController> getEnergyControllers() throws IOException {
