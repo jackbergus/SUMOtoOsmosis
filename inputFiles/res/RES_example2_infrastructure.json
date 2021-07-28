@@ -34,7 +34,23 @@
 				"bwSize":100,				
 				"storage":10000,
 				"mips":10000				
-            }
+            },
+			{
+				"name":"edgeDevice_3",
+				"pes" : 4,
+				"ramSize":10000,
+				"bwSize":100,
+				"storage":10000,
+				"mips":10000
+			},
+			{
+				"name":"edgeDevice_4",
+				"pes" : 4,
+				"ramSize":10000,
+				"bwSize":100,
+				"storage":10000,
+				"mips":10000
+			}
             ],
 		"MELEntities":[
 		{
@@ -54,7 +70,25 @@
 			"pesNumber":1,
 			"vmm":"xxx",			
 			"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"			 
-		}
+		},
+			{
+				"name":"MEL_3",
+				"bw":100,
+				"mips":250,
+				"ram":10000,
+				"pesNumber":1,
+				"vmm":"xxx",
+				"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			},
+			{
+				"name":"MEL_4",
+				"bw":100,
+				"mips":250,
+				"ram":10000,
+				"pesNumber":1,
+				"vmm":"xxx",
+				"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			}
 		],
 		"controllers": [
 		{
@@ -123,7 +157,9 @@
 			{ "source" : "core2" , "destination" : "edge4" , "bw" : 100},
 			{ "source" : "core2" , "destination" : "edge5" , "bw" : 100},			
 			{ "source" : "edge1" , "destination" : "edgeDevice_1" , "bw" : 100},
-			{ "source" : "edge2" , "destination" : "edgeDevice_2" , "bw" : 100}
+			{ "source" : "edge2" , "destination" : "edgeDevice_2" , "bw" : 100},
+			{ "source" : "edge3" , "destination" : "edgeDevice_3" , "bw" : 100},
+			{ "source" : "edge4" , "destination" : "edgeDevice_4" , "bw" : 100}
 		],
 		"ioTDevices":[
 			  {
