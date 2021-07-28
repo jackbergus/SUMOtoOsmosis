@@ -39,11 +39,13 @@ public class OsmesisBroker extends DatacenterBroker {
 	private List<Cloudlet> edgeletList = new ArrayList<>();
 	private List<OsmesisAppDescription> appList; 	
 	private Map<String, Integer> iotDeviceNameToId = new HashMap<>();
-	private Map<Integer, List<? extends Vm>> mapVmsToDatacenter  = new HashMap<>();;
+	private Map<Integer, List<? extends Vm>> mapVmsToDatacenter  = new HashMap<>();
 	public static int brokerID;
 	private Map<String, Integer> iotVmIdByName = new HashMap<>();
 	public static List<WorkflowInfo> workflowTag = new ArrayList<>();
 	private List<OsmesisDatacenter> datacenters = new ArrayList<>();
+
+	private Map<String, Integer> roundRobinMelMap = new HashMap<>();
 	
 	public OsmesisBroker(String name) {
 		super(name);
@@ -93,11 +95,75 @@ public class OsmesisBroker extends DatacenterBroker {
 		case CloudSimTags.END_OF_SIMULATION:
 			this.shutdownEntity();
 			break;
-			
+
+		case OsmosisTags.ROUTING_MEL_ID_RESOLUTION:
+			this.melResolution(ev);
+
 		default:
 			break;
 		}
 	}
+
+	private String melRoundRobinRoutingPolicy(String abstractMel, List<String> instances){
+
+		if (!roundRobinMelMap.containsKey(abstractMel)){
+			roundRobinMelMap.put(abstractMel,0);
+		}
+		int pos = roundRobinMelMap.get(abstractMel);
+		String result = instances.get(pos);
+		pos++;
+
+		if (pos>= instances.size()){
+			pos=0;
+		}
+
+		roundRobinMelMap.put(abstractMel,pos);
+		return result;
+	}
+
+	private boolean isAbstractMEL(String name){
+		boolean result = name.matches("^\\S*_[*]$");
+		return result;
+	}
+
+	List<String> findMELinstances(String name){
+		List<String> result = new ArrayList<String>();
+
+		String reg = name.replaceAll("(_\\*)$", "");
+		reg = "^"+reg+"_[0-9]+$";
+
+		for(String melName: iotVmIdByName.keySet()){
+			if (melName.matches(reg)){
+				result.add(melName);
+			}
+		}
+		return result;
+	}
+
+	private void melResolution(SimEvent ev) {
+		Flow flow = (Flow) ev.getData();
+		String melName = flow.getAppNameDest();
+		int mel_id = -1;
+
+		if (isAbstractMEL(melName)){
+			List<String> instances = findMELinstances(melName);
+			String melInstanceName = melRoundRobinRoutingPolicy(melName,instances);
+			flow.setAppNameDest(melInstanceName);
+			mel_id = getVmIdByName(melInstanceName); //name of VM
+
+			//dynamic mapping to datacenter
+			int edgeDatacenterId = this.getDatacenterIdByVmId(mel_id);
+			flow.setDatacenterId(edgeDatacenterId);
+			flow.setDatacenterName(this.getDatacenterNameById(edgeDatacenterId));
+			flow.getWorkflowTag().setSourceDCName(this.getDatacenterNameById(edgeDatacenterId));
+		} else {
+			mel_id = getVmIdByName(melName); //name of VM
+		}
+
+		flow.setDestination(mel_id);
+		sendNow(flow.getDatacenterId(), OsmosisTags.TRANSMIT_IOT_DATA, flow);
+	}
+
 	protected void processCloudletReturn(SimEvent ev)
 	{
 		Cloudlet cloudlet = (Cloudlet) ev.getData();						
@@ -216,9 +282,15 @@ public class OsmesisBroker extends DatacenterBroker {
 		if (allRequestedVmsCreated()) {		
 			for(OsmesisAppDescription app : this.appList){				
 				int iotDeviceID = getiotDeviceIdByName(app.getIoTDeviceName());
-				int melId = getVmIdByName(app.getMELName());								
-				int vmIdInCloud = this.getVmIdByName(app.getVmName());			
-				app.setIoTDeviceId(iotDeviceID);	
+
+				//This is necessary for osmotic flow abstract routing.
+				int melId=-1;
+				if (!isAbstractMEL(app.getMELName())){
+					melId = getVmIdByName(app.getMELName());
+				}
+
+				int vmIdInCloud = this.getVmIdByName(app.getVmName());
+				app.setIoTDeviceId(iotDeviceID);
 				app.setMelId(melId);				
 				int edgeDatacenterId = this.getDatacenterIdByVmId(melId);		
 				app.setEdgeDcId(edgeDatacenterId);

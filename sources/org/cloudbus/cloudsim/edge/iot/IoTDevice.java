@@ -166,15 +166,18 @@ public abstract class IoTDevice extends SimEntity {
 		flow.addPacketSize(app.getIoTDeviceOutputSize());			
 		updateBandwidth();
 		
-		sendNow(flow.getDatacenterId(), OsmosisTags.TRANSMIT_IOT_DATA, flow);		
+		//sendNow(flow.getDatacenterId(), OsmosisTags.TRANSMIT_IOT_DATA, flow);
+		sendNow(OsmesisBroker.brokerID, OsmosisTags.ROUTING_MEL_ID_RESOLUTION, flow); //necessary for osmotic flow routing - concept similar to ARP protocol
 	}
 
 	private Flow createFlow(OsmesisAppDescription app) {
-		int melId = app.getMelId();
+		//melID will be set in the osmosis broker in the MEL_ID_RESOLUTION process.
+		int melId = -1;
 		int datacenterId = -1;
 		datacenterId = app.getEdgeDcId();					
 		int id = OsmosisBuilder.flowId ;
-		Flow flow  = new Flow(this.getName(),app.getMELName(), this.getId(), melId, id, null);	
+		Flow flow  = new Flow(this.getName(),app.getMELName(), this.getId(), melId, id, null);
+		//Flow flow  = new Flow(this.getName(),mel_name, this.getId(), melId, id, null);
 		flow.setOsmesisAppId(app.getAppID());
 		flow.setAppName(app.getAppName());		
 		flow.addPacketSize(app.getIoTDeviceOutputSize());

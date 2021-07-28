@@ -196,6 +196,10 @@ public class Flow {
 		return destination;
 	}
 
+	public void setDestination(int destination) {
+		this.destination = destination;
+	}
+
 	public long getSize() {
 		return flowSize;
 	}
@@ -234,6 +238,10 @@ public class Flow {
 
 	public String getAppNameDest(){
 		return this.appNameDest;
+	}
+
+	public void setAppNameDest(String appNameDest){
+		this.appNameDest = appNameDest;
 	}
 		
 	public long getAmountToBeProcessed() {

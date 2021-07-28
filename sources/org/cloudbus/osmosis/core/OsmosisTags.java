@@ -52,4 +52,6 @@ public class OsmosisTags {
 	public static final int MOVING = Osmosis_BASE + 25;
 	public static final int updateIoTBW = Osmosis_BASE + 26;
 
+
+	public static final int ROUTING_MEL_ID_RESOLUTION = Osmosis_BASE + 27;
 }

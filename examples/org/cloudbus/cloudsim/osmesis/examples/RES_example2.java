@@ -37,12 +37,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A simple example showing the post-mortem RES analysis.
+ * A simple example showing the concept of adaptive routing for the osmotic flows.
+ * Concept based on the paper:
+ * Tomasz Szydlo, Krzysztof Zielinski,
+ * Adaptive Enterprise Service Bus, New Gener. Comput, 30(2-3), 189-214 (2012)
  */
 
-public class RES_example1 {
-    public static final String configurationFile = "inputFiles/res/RES_example1_infrastructure.json";
-    public static final String osmesisAppFile =  "inputFiles/res/RES_example1_workload_single_day.csv";
+public class RES_example2 {
+    public static final String configurationFile = "inputFiles/res/RES_example2_infrastructure.json";
+    public static final String osmesisAppFile =  "inputFiles/res/RES_example2_workload_single_day.csv";
+    //RES configuration is the same as in the example 1.
     public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example1_energy_config.json";
 
     OsmosisBuilder topologyBuilder;
@@ -53,7 +57,7 @@ public class RES_example1 {
     List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
-        RES_example1 osmosis = new RES_example1();
+        RES_example2 osmosis = new RES_example2();
         osmosis.start();
     }
 
@@ -67,6 +71,12 @@ public class RES_example1 {
         CloudSim.init(num_user, calendar, trace_flag);
         osmesisBroker  = new OsmesisBroker("OsmesisBroker");
         topologyBuilder = new OsmosisBuilder(osmesisBroker);
+
+        //Adaptive routing concept.
+        //MEL_* is a stateless abstract MEL, not the particular instance.
+        //MEL_* is inferred to MEL_1 or MEL_2
+        //By default it is driven by the Round-Robin policy.
+
         ConfiguationEntity config = buildTopologyFromFile(configurationFile);
         //
         if(config !=  null) {
@@ -112,9 +122,9 @@ public class RES_example1 {
         Log.printLine();
         Log.printLine("Post-mortem RES energy analysis!");
         RESPrinter res_printer = new RESPrinter();
-        res_printer.PostMortemAnalysis(energyControllers,"20160101:0000", true,3600);
-        res_printer.PostMortemAnalysis(energyControllers,"20160501:0000", false, 3600);
-        res_printer.PostMortemAnalysis(energyControllers,"20160901:0000", false, 3600);
+        res_printer.PostMortemAnalysis(energyControllers,"20160101:0000", true,360);
+        res_printer.PostMortemAnalysis(energyControllers,"20160501:0000", false, 360);
+        res_printer.PostMortemAnalysis(energyControllers,"20160901:0000", false, 360);
         Log.printLine("End of RES analysis!");
     }
 
