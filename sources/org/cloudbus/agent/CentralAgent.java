@@ -1,33 +1,38 @@
 package org.cloudbus.agent;
 
-import java.util.Queue;
-
-public class CentralAgent {
+public class CentralAgent extends AbstractAgent{
     private static CentralAgent instance;
-    protected Queue<AgentMessage> messages;
-    void processMessages()
-    {
-        while(!messages.isEmpty())
-        {
-            AgentMessage agentMessage=messages.poll();
-            agentMessage.DESTINATION.forEach(agent-> agent.notifyAccept(agentMessage));
-        }
-    }
 
-    void acceptMessage(AgentMessage message)
-    {
-        messages.add(message);
-    }
-
-    private CentralAgent()
-    {
-
-    }
+    private static String CENTRAL_AGENT_NAME="CentralOsmoticAgent";
 
     public static CentralAgent getInstance()
     {
-        if(instance==null)
+        if(instance==null){
             instance=new CentralAgent();
+            instance.setName(CENTRAL_AGENT_NAME);
+        }
         return instance;
+    }
+
+    @Override
+    public void monitor() {
+        //In Central Agent messages are received in the monitor phase from simple distributed agents
+        //using getReceivedMessages().
+    }
+
+    @Override
+    public void analyze() {
+
+    }
+
+    @Override
+    public void plan() {
+
+    }
+
+    @Override
+    public void execute() {
+        //In Central Agent messages are published to distributed agents in the execute phase
+        //using publishMessage(AgentMessage message).
     }
 }

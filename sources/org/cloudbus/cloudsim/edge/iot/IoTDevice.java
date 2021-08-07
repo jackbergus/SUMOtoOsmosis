@@ -14,6 +14,8 @@ package org.cloudbus.cloudsim.edge.iot;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cloudbus.agent.AgentBroker;
+import org.cloudbus.agent.DeviceAgent;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
@@ -21,12 +23,7 @@ import org.cloudbus.cloudsim.edge.core.edge.Battery;
 import org.cloudbus.cloudsim.edge.core.edge.Mobility;
 import org.cloudbus.cloudsim.edge.iot.network.EdgeNetworkInfo;
 import org.cloudbus.cloudsim.edge.utils.LogUtil;
-import org.cloudbus.osmosis.core.Flow;
-import org.cloudbus.osmosis.core.OsmesisAppDescription;
-import org.cloudbus.osmosis.core.OsmesisBroker;
-import org.cloudbus.osmosis.core.OsmosisBuilder;
-import org.cloudbus.osmosis.core.OsmosisTags;
-import org.cloudbus.osmosis.core.WorkflowInfo;
+import org.cloudbus.osmosis.core.*;
 import org.cloudbus.osmosis.core.polocies.MovingPolicy;
 
 /**
@@ -51,9 +48,11 @@ public abstract class IoTDevice extends SimEntity {
 	public abstract boolean updateBatteryBySensing();
 	public abstract boolean updateBatteryByTransmission();
 	private double bw;
-	private double usedBw; 
+	private double usedBw;
 
-	
+	private OsmosisRoutingTable routingTable = new OsmosisRoutingTable();
+	private DeviceAgent osmoticDeviceAgent;
+
 	private List<Flow> flowList = new ArrayList<>(); 
 	
 	public IoTDevice( String name, EdgeNetworkInfo networkModel, double bandwidth) {
@@ -62,6 +61,9 @@ public abstract class IoTDevice extends SimEntity {
 		this.networkModel = networkModel;
 		this.enabled = true;		
 		this.bw = bandwidth;
+
+		//Osmosis Agents
+		AgentBroker.getInstance().createDeviceAgent(name, this);
 	}
 	
 	@Override
@@ -165,10 +167,18 @@ public abstract class IoTDevice extends SimEntity {
 		OsmesisBroker.workflowTag.add(workflowTag);
 		flow.addPacketSize(app.getIoTDeviceOutputSize());			
 		updateBandwidth();
-		
+
+
+
+		//Adaptive Osmosis Flow Routing
+		String finalMEL = routingTable.getRule(flow.getAppNameDest());
+		flow.setAppNameDest(finalMEL);
+
+		//MEL ID Resolution in Osmotic Broker
 		//sendNow(flow.getDatacenterId(), OsmosisTags.TRANSMIT_IOT_DATA, flow);
 		sendNow(OsmesisBroker.brokerID, OsmosisTags.ROUTING_MEL_ID_RESOLUTION, flow); //necessary for osmotic flow routing - concept similar to ARP protocol
 	}
+
 
 	private Flow createFlow(OsmesisAppDescription app) {
 		//melID will be set in the osmosis broker in the MEL_ID_RESOLUTION process.
@@ -215,5 +225,9 @@ public abstract class IoTDevice extends SimEntity {
 		for(Flow getFlow : this.flowList){
 			getFlow.updateSourceBw(this.usedBw);
 		}	
+	}
+
+	public OsmosisRoutingTable getRoutingTable() {
+		return routingTable;
 	}
 }

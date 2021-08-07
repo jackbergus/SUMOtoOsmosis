@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudbus.agent.AgentBroker;
 import org.cloudbus.cloudsim.Datacenter;
 import org.cloudbus.cloudsim.DatacenterCharacteristics;
 import org.cloudbus.cloudsim.Host;
@@ -68,6 +69,9 @@ public abstract class OsmesisDatacenter extends Datacenter{
 			VmAllocationPolicy vmAllocationPolicy, List<Storage> storageList, double schedulingInterval)
 			throws Exception {
 		super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
+
+		//Osmosis Agents
+		AgentBroker.getInstance().createDCAgent(name, this);
 	}
 	
 	public List<Host> getHosts() {

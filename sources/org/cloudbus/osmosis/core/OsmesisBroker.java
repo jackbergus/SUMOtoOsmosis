@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.cloudbus.agent.AgentBroker;
+import org.cloudbus.agent.CentralAgent;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.DatacenterBroker;
 import org.cloudbus.cloudsim.UtilizationModelFull;
@@ -46,6 +49,8 @@ public class OsmesisBroker extends DatacenterBroker {
 	private List<OsmesisDatacenter> datacenters = new ArrayList<>();
 
 	private Map<String, Integer> roundRobinMelMap = new HashMap<>();
+
+	private CentralAgent osmoticCentralAgent;
 	
 	public OsmesisBroker(String name) {
 		super(name);
@@ -63,6 +68,9 @@ public class OsmesisBroker extends DatacenterBroker {
 
 	@Override
 	public void processEvent(SimEvent ev) {
+		//Execute MAPE loop at time interval
+		AgentBroker.getInstance().executeMAPE(CloudSim.clock());
+
 		switch (ev.getTag()) {
 		case CloudSimTags.RESOURCE_CHARACTERISTICS_REQUEST:
 			this.processResourceCharacteristicsRequest(ev);

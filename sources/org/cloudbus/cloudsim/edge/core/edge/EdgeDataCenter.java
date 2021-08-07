@@ -25,6 +25,8 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.cloudbus.agent.AgentBroker;
+import org.cloudbus.agent.DCAgent;
 import org.cloudbus.cloudsim.DatacenterCharacteristics;
 import org.cloudbus.cloudsim.Storage;
 import org.cloudbus.cloudsim.Vm;
@@ -48,12 +50,15 @@ import org.cloudbus.cloudsim.sdn.Switch;
 public class EdgeDataCenter extends OsmesisDatacenter{
 	
 	private List<Flow> flowList = new ArrayList<>(); 
-	private List<Flow> flowListHis = new ArrayList<>(); 
-	
+	private List<Flow> flowListHis = new ArrayList<>();
+
 	public EdgeDataCenter(String name, DatacenterCharacteristics characteristics,
 			VmAllocationPolicy vmAllocationPolicy, List<Storage> storageList, double schedulingInterval)
 			throws Exception {
 		super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
+
+		//Osmosis Agents
+		AgentBroker.getInstance().createDCAgent(name, this);
 	}
 
 	@Override
