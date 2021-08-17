@@ -122,9 +122,9 @@ public class RES_example2 {
         Log.printLine();
         Log.printLine("Post-mortem RES energy analysis!");
         RESPrinter res_printer = new RESPrinter();
-        res_printer.PostMortemAnalysis(energyControllers,"20160101:0000", true,36);
-        res_printer.PostMortemAnalysis(energyControllers,"20160501:0000", false, 36);
-        res_printer.PostMortemAnalysis(energyControllers,"20160901:0000", false, 36);
+        res_printer.postMortemAnalysis(energyControllers,"20160101:0000", true,36);
+        res_printer.postMortemAnalysis(energyControllers,"20160501:0000", false, 36);
+        res_printer.postMortemAnalysis(energyControllers,"20160901:0000", false, 36);
         Log.printLine("End of RES analysis!");
     }
 
