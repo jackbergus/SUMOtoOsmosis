@@ -5,7 +5,7 @@
       "name": "Edge_1",
       "type": "edge",
       "energyManagementPolicy": {
-        "className": "exportLimitEnergyManagementPolicy"
+        "className": "ExportLimitEnergyManagementPolicy"
       },
       "utilization" : "50",
       "energyStorage": [
@@ -53,7 +53,7 @@
       "name": "Edge_2",
       "type": "edge",
       "energyManagementPolicy": {
-        "className": "exportLimitEnergyManagementPolicy"
+        "className": "ExportLimitEnergyManagementPolicy"
       },
       "utilization" : "50",
       "energyStorage": [
@@ -90,7 +90,7 @@
       "name": "Cloud_1",
       "type": "cloud",
       "energyManagementPolicy": {
-        "className": "exportLimitEnergyManagementPolicy"
+        "className": "ExportLimitWithEnergyStoragePolicy"
       },
       "utilization" : "40",
       "energyStorage": [
