@@ -34,7 +34,7 @@ public class RESPrinter {
         RESutilization = new HashMap<>();
     }
 
-    public void PostMortemAnalysis(Map<String, EnergyController> energyControllers, String time_s, boolean sources_details, int print_step) {
+    public void postMortemAnalysis(Map<String, EnergyController> energyControllers, String time_s, boolean sources_details, int print_step) {
         RESannual.clear();
         RESaverage_power.clear();
         RESutilization.clear();
@@ -45,19 +45,19 @@ public class RESPrinter {
         timeStartRES = LocalDateTime.parse(time_s, AppConfig.FORMATTER);
 
         //calculate RES parameters for each datacenter
-        for(String dc: energyControllers.keySet()){
+        energyControllers.keySet().forEach(dc -> {
             RESutilization.put(dc,energyControllers.get(dc).getUtilization());
             if (sources_details) {
                 Log.printLine(dc + " RES utilisation:\t " + energyControllers.get(dc).getUtilization() + "%");
                 Log.printLine(dc + " RES sources:\t " + energyControllers.get(dc).getEnergySources().size());
             }
             double annual_dc=0;
-            for(RenewableEnergySource res_source: energyControllers.get(dc).getEnergySources()){
-                double annual = res_source.getEnergyData().getAnnualEnergy();
+            for(RenewableEnergySource resSource: energyControllers.get(dc).getEnergySources()){
+                double annual = resSource.getEnergyData().getAnnualEnergy();
                 annual_dc += annual;
                 if (sources_details) {
-                    Log.printLine(dc + " annual RES energy:\t" + annual + "Wh");
-                    Log.printLine(dc + " average RES power:\t" + annual / 365 / 24 + "W");
+                    Log.printLine(dc + " " + resSource.getName() + " annual RES energy:\t" + annual + " Wh");
+                    Log.printLine(dc + " " + resSource.getName() + " average RES power:\t" + annual / 365 / 24 + " W");
                 }
             }
             RESannual.put(dc,annual_dc);
@@ -65,9 +65,9 @@ public class RESPrinter {
             average_power.put(dc,annual_dc/365/24 / (energyControllers.get(dc).getUtilization() / 100.0) );
 
             if (sources_details) {
-                Log.printLine(dc + " average power consumption:\t" + average_power.get(dc) + "W");
+                Log.printLine(dc + " average power consumption:\t" + average_power.get(dc) + " W");
             }
-        }
+        });
 
         //collect all osmotic flows
         List<WorkflowInfo> tags = new ArrayList<>();

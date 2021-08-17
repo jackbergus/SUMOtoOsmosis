@@ -84,7 +84,6 @@ public class RES_example1 {
         osmesisBroker.setDatacenters(topologyBuilder.getOsmesisDatacentres());
 
         Map<String, EnergyController> energyControllers = getEnergyControllers();
-        System.out.println(energyControllers);
 
         double startTime = CloudSim.startSimulation();
 
@@ -108,9 +107,9 @@ public class RES_example1 {
         Log.printLine();
         Log.printLine("Post-mortem RES energy analysis!");
         RESPrinter res_printer = new RESPrinter();
-        res_printer.PostMortemAnalysis(energyControllers,"20160101:0000", true,3600);
-        res_printer.PostMortemAnalysis(energyControllers,"20160501:0000", false, 3600);
-        res_printer.PostMortemAnalysis(energyControllers,"20160901:0000", false, 3600);
+        res_printer.postMortemAnalysis(energyControllers,"20160101:0000", true,3600);
+        res_printer.postMortemAnalysis(energyControllers,"20160501:0000", false, 3600);
+        res_printer.postMortemAnalysis(energyControllers,"20160901:0000", false, 3600);
         Log.printLine("End of RES analysis!");
     }
 
