@@ -32,10 +32,10 @@ public class PVGisResponse implements EnergyData {
 
     @Override
     public double getAnnualEnergy() {
-        float annual = 0;
-        for(Hourly hour: outputs.getHourly()){
-            annual += hour.getSystemPower();
-        }
-        return annual;
+        return outputs.getHourly()
+                .stream()
+                .map(Hourly::getSystemPower)
+                .mapToDouble(Double::doubleValue)
+                .sum();
     }
 }
