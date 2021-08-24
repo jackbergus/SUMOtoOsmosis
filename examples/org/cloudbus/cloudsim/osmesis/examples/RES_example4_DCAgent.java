@@ -17,11 +17,12 @@ import org.cloudbus.agent.DCAgent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RES_example3_DCAgent extends DCAgent {
+public class RES_example4_DCAgent extends DCAgent {
 
     List<String> melNames = new ArrayList<>();
+    double resPower;
 
-    public RES_example3_DCAgent() {
+    public RES_example4_DCAgent() {
         //This is necessary for dynamic agent instance creation.
     }
 
@@ -35,6 +36,8 @@ public class RES_example3_DCAgent extends DCAgent {
             melNames.add(name);
         }
 
+        //Get current Green Energy Ratio
+        resPower = energyController.getRESCurrentPower();
     }
 
     @Override
@@ -42,12 +45,14 @@ public class RES_example3_DCAgent extends DCAgent {
         super.analyze();
 
         //Create new message.
-        RES_example3_AgentMessage message = (RES_example3_AgentMessage) newAgentMessage();
+        RES_example4_AgentMessage message = (RES_example4_AgentMessage) newAgentMessage();
 
         //Prepapre message content - list of available MELs.
         for(String name:melNames){
             message.addMEL(name);
         }
+
+        message.setGreenEnergyRatio(resPower);
 
         //Send to all neighbours (null destination means all - follows the agent topology defined in the example file).
         message.setDESTINATION(null);

@@ -23,6 +23,8 @@ public class EnergyController {
     private EnergyManagementPolicy policy;
     private Double utilization;
 
+    private LocalDateTime simulationCurrentTime;
+
     public static EnergyController fromDatacenter(Datacenter datacenter) {
         return new EnergyController(
                 datacenter.getName(),
@@ -43,6 +45,10 @@ public class EnergyController {
         this.utilization = utilization;
     }
 
+    public void setCurrentTime(LocalDateTime simulationCurrentTime){
+        this.simulationCurrentTime = simulationCurrentTime;
+    }
+
     public double getRESCurrentPower(long timestamp) {
         double power=0.0;
         for(RenewableEnergySource source:energySources){
@@ -59,4 +65,11 @@ public class EnergyController {
         return power;
     }
 
+    public double getRESCurrentPower() {
+        double power=0.0;
+        for(RenewableEnergySource source:energySources){
+            power += source.getEnergyData().getCurrentPower(simulationCurrentTime);
+        }
+        return power;
+    }
 }

@@ -2,12 +2,16 @@ package org.cloudbus.agent;
 
 import org.cloudbus.cloudsim.edge.iot.IoTDevice;
 import org.cloudbus.osmosis.core.OsmesisDatacenter;
+import org.cloudbus.res.EnergyController;
+import org.cloudbus.res.config.AppConfig;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class AgentBroker {
     //Singleton pattern
     private static AgentBroker singleton = new AgentBroker();
+    private Map<String, EnergyController> energyControllers;
 
     public static AgentBroker getInstance() {
         return singleton;
@@ -25,6 +29,26 @@ public class AgentBroker {
     private Class dcAgentClass;
     private Class deviceAgentClass;
     private Class agentMessageClass;
+
+    private LocalDateTime simulationStartTime;
+    private LocalDateTime simulationCurrentTime;
+
+    private void updateEnergyControllersTime(){
+        for (EnergyController controller: energyControllers.values()){
+            controller.setCurrentTime(simulationCurrentTime);
+        }
+    }
+
+    public void setSimulationStartTime(String time_s){
+        simulationStartTime = LocalDateTime.parse(time_s, AppConfig.FORMATTER);
+        simulationCurrentTime = simulationStartTime;
+        updateEnergyControllersTime();
+    }
+
+    public void updateTime(double clock) {
+        simulationCurrentTime = simulationStartTime.plusNanos((long) (clock*1000000000));
+        updateEnergyControllersTime();
+    }
 
     public void setDcAgentClass(Class dcAgentClass) {
         this.dcAgentClass = dcAgentClass;
@@ -45,6 +69,13 @@ public class AgentBroker {
             DCAgent dcAgent = (DCAgent) dcAgentClass.newInstance();
             dcAgent.setOsmesisDatacenter(dc);
             dcAgent.setName(dcName);
+
+            if (energyControllers.containsKey(dcName)){
+                dcAgent.setEnergyController(energyControllers.get(dcName));
+            } else {
+                dcAgent.setEnergyController(null);
+            }
+
             agentsDC.put(dcName,dcAgent);
         } catch (InstantiationException e) {
             e.printStackTrace();
@@ -158,5 +189,9 @@ public class AgentBroker {
             agent.plan();
             agent.execute();
         }
+    }
+
+    public void setEnergyControllers(Map<String, EnergyController> energyControllers) {
+        this.energyControllers = energyControllers;
     }
 }

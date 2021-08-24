@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  * The loop is triggered no more often than every 15 minutes.
  */
 
-public class RES_example3 {
+public class RES_example4 {
     //Workload and infrastructure configuration are the same as in the example 2.
     public static final String configurationFile = "inputFiles/res/RES_example2_infrastructure.json";
     public static final String osmesisAppFile =  "inputFiles/res/RES_example2_workload_single_day.csv";
@@ -60,7 +60,7 @@ public class RES_example3 {
     List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
-        RES_example3 osmosis = new RES_example3();
+        RES_example4 osmosis = new RES_example4();
         osmosis.start();
     }
 
@@ -72,9 +72,9 @@ public class RES_example3 {
 
         // Set Agent and Message classes
         AgentBroker agentBroker = AgentBroker.getInstance();
-        agentBroker.setDcAgentClass(RES_example3_DCAgent.class);
-        agentBroker.setDeviceAgentClass(RES_example3_DeviceAgent.class);
-        agentBroker.setAgentMessageClass(RES_example3_AgentMessage.class);
+        agentBroker.setDcAgentClass(RES_example4_DCAgent.class);
+        agentBroker.setDeviceAgentClass(RES_example4_DeviceAgent.class);
+        agentBroker.setAgentMessageClass(RES_example4_AgentMessage.class);
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.

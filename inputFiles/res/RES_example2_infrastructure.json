@@ -54,7 +54,7 @@
             ],
 		"MELEntities":[
 		{
-			"name":"MEL_1",								
+			"name":"MEL.1",
 			"bw":100,				 
 			"mips":250,			
 			"ram":10000,
@@ -63,7 +63,7 @@
 			"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
 		},
 		{
-			"name":"MEL_2",					
+			"name":"MEL.2",
 			"bw":100,
 			"mips":250,			
 			"ram":10000,
@@ -72,7 +72,7 @@
 			"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"			 
 		},
 			{
-				"name":"MEL_3",
+				"name":"MEL.3",
 				"bw":100,
 				"mips":250,
 				"ram":10000,
@@ -81,7 +81,7 @@
 				"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
 			},
 			{
-				"name":"MEL_4",
+				"name":"MEL.4",
 				"bw":100,
 				"mips":250,
 				"ram":10000,

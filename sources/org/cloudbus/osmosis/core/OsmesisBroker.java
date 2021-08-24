@@ -68,6 +68,9 @@ public class OsmesisBroker extends DatacenterBroker {
 
 	@Override
 	public void processEvent(SimEvent ev) {
+		//Update simulation time in the AgentBroker
+		AgentBroker.getInstance().updateTime(CloudSim.clock());
+
 		//Execute MAPE loop at time interval
 		AgentBroker.getInstance().executeMAPE(CloudSim.clock());
 
@@ -130,15 +133,15 @@ public class OsmesisBroker extends DatacenterBroker {
 	}
 
 	private boolean isAbstractMEL(String name){
-		boolean result = name.matches("^\\S*_[*]$");
+		boolean result = name.matches("^\\S*.[*]$");
 		return result;
 	}
 
 	List<String> findMELinstances(String name){
 		List<String> result = new ArrayList<String>();
 
-		String reg = name.replaceAll("(_\\*)$", "");
-		reg = "^"+reg+"_[0-9]+$";
+		String reg = name.replaceAll("(.\\*)$", "");
+		reg = "^"+reg+".[0-9]+$";
 
 		for(String melName: iotVmIdByName.keySet()){
 			if (melName.matches(reg)){
@@ -166,6 +169,12 @@ public class OsmesisBroker extends DatacenterBroker {
 			flow.getWorkflowTag().setSourceDCName(this.getDatacenterNameById(edgeDatacenterId));
 		} else {
 			mel_id = getVmIdByName(melName); //name of VM
+
+			//dynamic mapping to datacenter
+			int edgeDatacenterId = this.getDatacenterIdByVmId(mel_id);
+			flow.setDatacenterId(edgeDatacenterId);
+			flow.setDatacenterName(this.getDatacenterNameById(edgeDatacenterId));
+			flow.getWorkflowTag().setSourceDCName(this.getDatacenterNameById(edgeDatacenterId));
 		}
 
 		flow.setDestination(mel_id);

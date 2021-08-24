@@ -18,11 +18,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class RES_example3_AgentMessage extends AgentMessage {
+public class RES_example4_AgentMessage extends AgentMessage {
     List<String> availableMELs = new ArrayList<>();
+    double greenEnergyRatio;
 
-    public RES_example3_AgentMessage() {
+    public RES_example4_AgentMessage() {
         //This is necessary for dynamic agent instance creation.
+    }
+
+    public double getGreenEnergyRatio() {
+        return greenEnergyRatio;
+    }
+
+    public void setGreenEnergyRatio(double greenEnergyRatio) {
+        this.greenEnergyRatio = greenEnergyRatio;
     }
 
     public List<String> getAvailableMELs() {
@@ -33,7 +42,7 @@ public class RES_example3_AgentMessage extends AgentMessage {
         availableMELs.add(mel);
     }
 
-    public RES_example3_AgentMessage(Long id, String source, Set<String> destination) {
+    public RES_example4_AgentMessage(Long id, String source, Set<String> destination) {
         super(id, source, destination);
     }
 }
