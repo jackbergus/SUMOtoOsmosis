@@ -1,0 +1,28 @@
+{
+  "DCAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_DCAgent",
+  "DeviceAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_DeviceAgent",
+  "AgentMessageClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_AgentMessage",
+  "Topology": {
+    "Vertices": [
+      {
+        "Name": "Edge_1"
+      },
+      {
+        "Name": "temperature_1"
+      },
+      {
+        "Name": "Edge_2"
+      }
+    ],
+    "Links": [
+      {
+        "In": "Edge_1",
+        "Out": "temperature_1"
+      },
+      {
+        "In": "Edge_2",
+        "Out": "temperature_1"
+      }
+    ]
+  }
+}
