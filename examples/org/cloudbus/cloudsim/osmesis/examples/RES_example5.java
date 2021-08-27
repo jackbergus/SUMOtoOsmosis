@@ -15,9 +15,8 @@ package org.cloudbus.cloudsim.osmesis.examples;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.cloudbus.agent.AgentBroker;
-import org.cloudbus.agent.DCAgent;
 import org.cloudbus.agent.config.AgentsConfig;
-import org.cloudbus.agent.config.Link;
+import org.cloudbus.agent.config.TopologyLink;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -79,13 +78,16 @@ public class RES_example5 {
         // Set Agent and Message classes
         AgentBroker agentBroker = AgentBroker.getInstance();
 
-        // here we get classes names as strings
+        // Getting configuration from json and entering classes to Agent Broker
         Gson gson = new GsonBuilder().create();
         AgentsConfig agentsConfig = gson.fromJson(new FileReader(AGENT_CONFIG_FILE), AgentsConfig.class);
 
         String dcAgentClass = agentsConfig.DCAgentClassName;
         String deviceAgentClass = agentsConfig.DeviceAgentClassName;
+        String centralAgentClass = agentsConfig.CentralAgentClassName;
         String agentMessageClass = agentsConfig.AgentMessageClassName;
+
+        Class<?> takenCentralAgentClass = Class.forName(centralAgentClass);
 
         agentBroker.setDcAgentClass(Class.forName(dcAgentClass));
         agentBroker.setDeviceAgentClass(Class.forName(deviceAgentClass));
@@ -93,11 +95,9 @@ public class RES_example5 {
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
-        for (Link link : agentsConfig.Topology.Links) {
-            agentBroker.addAgentLink(link.In, link.Out);
+        for (TopologyLink link : agentsConfig.TopologyLinks) {
+            agentBroker.addAgentLink(link.Agent1, link.Agent2);
         }
-//        agentBroker.addAgentLink("temperature_1", "Edge_1");
-//        agentBroker.addAgentLink("temperature_1", "Edge_2");
 
         //Osmotic Agents time interval
         agentBroker.setMAPEInterval(15*60);
