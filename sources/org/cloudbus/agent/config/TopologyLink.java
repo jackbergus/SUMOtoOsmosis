@@ -2,6 +2,6 @@ package org.cloudbus.agent.config;
 
 public class TopologyLink
 {
-    public String Agent1;
-    public String Agent2;
+    public String AgentA;
+    public String AgentB;
 }

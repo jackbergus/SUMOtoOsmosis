@@ -96,7 +96,7 @@ public class RES_example5 {
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
         for (TopologyLink link : agentsConfig.TopologyLinks) {
-            agentBroker.addAgentLink(link.Agent1, link.Agent2);
+            agentBroker.addAgentLink(link.AgentA, link.AgentB);
         }
 
         //Osmotic Agents time interval

@@ -5,12 +5,12 @@
   "AgentMessageClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_AgentMessage",
   "TopologyLinks": [
     {
-      "Agent1": "Edge_1",
-      "Agent2": "temperature_1"
+      "AgentA": "Edge_1",
+      "AgentB": "temperature_1"
     },
     {
-      "Agent1": "Edge_2",
-      "Agent2": "temperature_1"
+      "AgentA": "Edge_2",
+      "AgentB": "temperature_1"
     }
   ]
 }
