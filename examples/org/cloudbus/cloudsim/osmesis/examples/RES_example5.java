@@ -16,6 +16,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.cloudbus.agent.AgentBroker;
 import org.cloudbus.agent.config.AgentsConfig;
+import org.cloudbus.agent.config.ConfigLoader;
+import org.cloudbus.agent.config.ConfigProvider;
 import org.cloudbus.agent.config.TopologyLink;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
@@ -79,23 +81,17 @@ public class RES_example5 {
         AgentBroker agentBroker = AgentBroker.getInstance();
 
         // Getting configuration from json and entering classes to Agent Broker
-        Gson gson = new GsonBuilder().create();
-        AgentsConfig agentsConfig = gson.fromJson(new FileReader(AGENT_CONFIG_FILE), AgentsConfig.class);
+        ConfigProvider agentsConfigProvider = new ConfigProvider(ConfigLoader.getFromFile(AGENT_CONFIG_FILE));
 
-        String dcAgentClass = agentsConfig.DCAgentClassName;
-        String deviceAgentClass = agentsConfig.DeviceAgentClassName;
-        String centralAgentClass = agentsConfig.CentralAgentClassName;
-        String agentMessageClass = agentsConfig.AgentMessageClassName;
+        Class<?> takenCentralAgentClass = agentsConfigProvider.getCentralAgentClass();
 
-        Class<?> takenCentralAgentClass = Class.forName(centralAgentClass);
-
-        agentBroker.setDcAgentClass(Class.forName(dcAgentClass));
-        agentBroker.setDeviceAgentClass(Class.forName(deviceAgentClass));
-        agentBroker.setAgentMessageClass(Class.forName(agentMessageClass));
+        agentBroker.setDcAgentClass(agentsConfigProvider.getDCAgentClass());
+        agentBroker.setDeviceAgentClass(agentsConfigProvider.getDeviceAgentClass());
+        agentBroker.setAgentMessageClass(agentsConfigProvider.getAgentMessageClass());
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
-        for (TopologyLink link : agentsConfig.TopologyLinks) {
+        for (TopologyLink link : agentsConfigProvider.getTopologyLinks()) {
             agentBroker.addAgentLink(link.AgentA, link.AgentB);
         }
 
