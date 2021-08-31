@@ -12,13 +12,7 @@
 
 package org.cloudbus.cloudsim.osmesis.examples;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.cloudbus.agent.AgentBroker;
-import org.cloudbus.agent.config.AgentsConfig;
-import org.cloudbus.agent.config.ConfigLoader;
-import org.cloudbus.agent.config.ConfigProvider;
-import org.cloudbus.agent.config.TopologyLink;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -51,13 +45,12 @@ import java.util.stream.Collectors;
  * The loop is triggered no more often than every 15 minutes.
  */
 
-public class RES_example5 {
+public class RES_example6 {
     //Workload and infrastructure configuration are the same as in the example 2.
-    public static final String configurationFile = "inputFiles/res/RES_example2_infrastructure.json";
+    public static final String configurationFile = "inputFiles/res/RES_example6_infrastructure_2edges.json";
     public static final String osmesisAppFile =  "inputFiles/res/RES_example2_workload_single_day.csv";
     //RES configuration is the same as in the example 1.
     public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example1_energy_config.json";
-    public static final String AGENT_CONFIG_FILE="inputFiles/agent/agent_config.json";
 
     OsmosisBuilder topologyBuilder;
     OsmesisBroker osmesisBroker;
@@ -67,7 +60,7 @@ public class RES_example5 {
     List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
-        RES_example5 osmosis = new RES_example5();
+        RES_example6 osmosis = new RES_example6();
         osmosis.start();
     }
 
@@ -79,22 +72,14 @@ public class RES_example5 {
 
         // Set Agent and Message classes
         AgentBroker agentBroker = AgentBroker.getInstance();
-
-        // Getting configuration from json and entering classes to Agent Broker
-        ConfigProvider agentsConfigProvider = new ConfigProvider(ConfigLoader.getFromFile(AGENT_CONFIG_FILE));
-
-        // In this example, the Central Agent is not used
-        //Class<?> takenCentralAgentClass = agentsConfigProvider.getCentralAgentClass();
-
-        agentBroker.setDcAgentClass(agentsConfigProvider.getDCAgentClass());
-        agentBroker.setDeviceAgentClass(agentsConfigProvider.getDeviceAgentClass());
-        agentBroker.setAgentMessageClass(agentsConfigProvider.getAgentMessageClass());
+        agentBroker.setDcAgentClass(RES_example6_DCAgent.class);
+        agentBroker.setDeviceAgentClass(RES_example6_DeviceAgent.class);
+        agentBroker.setAgentMessageClass(RES_example6_AgentMessage.class);
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
-        for (TopologyLink link : agentsConfigProvider.getTopologyLinks()) {
-            agentBroker.addAgentLink(link.AgentA, link.AgentB);
-        }
+        agentBroker.addAgentLink("temperature_1", "Edge_1");
+        agentBroker.addAgentLink("temperature_1", "Edge_2");
 
         //Osmotic Agents time interval
         agentBroker.setMAPEInterval(15*60);
