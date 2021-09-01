@@ -100,6 +100,9 @@ public class RESPrinter {
 
         double transactionTotalTime;
         double transactionTotalCpuTime;
+
+        double transaction_total_CPU_RES_utilization=0;
+
         for(WorkflowInfo workflowTag : tags){
             transactionTotalTime =  workflowTag.getIotDeviceFlow().getTransmissionTime() + workflowTag.getEdgeLet().getActualCPUTime()
                     + workflowTag.getEdgeToCloudFlow().getTransmissionTime() + workflowTag.getCloudLet().getActualCPUTime();
@@ -138,6 +141,8 @@ public class RESPrinter {
                 transaction_CPU_RES_utilization = 100.0;
             }
 
+            transaction_total_CPU_RES_utilization+=transaction_CPU_RES_utilization;
+
             if (worflow_id % print_step == 0) {
                 Log.printLine(String.format("%1s %15s %15s %18s %18s %21s %15s %21s %20s %20s"
                         , app_id
@@ -152,6 +157,8 @@ public class RESPrinter {
                         , new DecimalFormat("0.00").format(transaction_CPU_RES_utilization)));
             }
         }
+
+        Log.printLine(String.format("Self-consumed RES Utilization for workload CPU processing: %s",transaction_total_CPU_RES_utilization/tags.size()));
     }
 
 }

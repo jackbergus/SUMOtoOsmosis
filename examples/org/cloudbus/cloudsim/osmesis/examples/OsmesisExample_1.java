@@ -56,10 +56,7 @@ public class OsmesisExample_1 {
 	public static final String RES_CONFIG_FILE =  "inputFiles/Example_RES_config.json";
     OsmosisBuilder topologyBuilder;
 	OsmesisBroker osmesisBroker;
-	List<OsmesisDatacenter> datacenters;
-	List<MEL> melList;	
 	EdgeSDNController edgeSDNController;
-	List<Vm> vmList;
 
 	public static void main(String[] args) throws Exception {
 		OsmesisExample_1 osmesis = new OsmesisExample_1();
@@ -96,9 +93,6 @@ public class OsmesisExample_1 {
 		osmesisBroker.submitOsmesisApps(OsmesisAppsParser.appList);
 		osmesisBroker.setDatacenters(topologyBuilder.getOsmesisDatacentres());
 
-		Map<String, EnergyController> energyControllers = getEnergyControllers();
-		System.out.println(energyControllers);
-
 		double startTime = CloudSim.startSimulation();
   
 		LogUtil.simulationFinished();
@@ -118,14 +112,6 @@ public class OsmesisExample_1 {
 		Log.printLine();
 		Log.printLine("Simulation Finished!");
 
-	}
-
-	private Map<String, EnergyController> getEnergyControllers() throws IOException {
-		RESResponse resResponse = AppConfig.RES_PARSER.parse(RES_CONFIG_FILE);
-		return resResponse.getDatacenters()
-				.stream()
-				.map(EnergyController::fromDatacenter)
-				.collect(Collectors.toMap(EnergyController::getEdgeDatacenterId, Function.identity()));
 	}
 
 	private ConfiguationEntity buildTopologyFromFile(String filePath) throws Exception {

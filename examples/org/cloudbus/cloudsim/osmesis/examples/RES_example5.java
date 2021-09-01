@@ -47,8 +47,8 @@ import java.util.stream.Collectors;
 /**
  * A simple example that use Osmotic Agents.
  *
- * Osmotic Agents are implemented following MAPE (Monitor-Analyze-Plan-Execute) control loop principle.
- * The loop is triggered no more often than every 15 minutes.
+ * Functionality as in Example 4, but the agents configuration is stored in the JSON file.
+ *
  */
 
 public class RES_example5 {
@@ -57,14 +57,11 @@ public class RES_example5 {
     public static final String osmesisAppFile =  "inputFiles/res/RES_example2_workload_single_day.csv";
     //RES configuration is the same as in the example 1.
     public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example1_energy_config.json";
-    public static final String AGENT_CONFIG_FILE="inputFiles/agent/agent_config.json";
+    public static final String AGENT_CONFIG_FILE="inputFiles/agent/RES_example5_agent_config.json";
 
     OsmosisBuilder topologyBuilder;
     OsmesisBroker osmesisBroker;
-    List<OsmesisDatacenter> datacenters;
-    List<MEL> melList;
     EdgeSDNController edgeSDNController;
-    List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
         RES_example5 osmosis = new RES_example5();
@@ -85,6 +82,7 @@ public class RES_example5 {
 
         // In this example, the Central Agent is not used
         //Class<?> takenCentralAgentClass = agentsConfigProvider.getCentralAgentClass();
+        //agentBroker.setCentralAgentClass(agentsConfigProvider.getCentralAgentClass());
 
         agentBroker.setDcAgentClass(agentsConfigProvider.getDCAgentClass());
         agentBroker.setDeviceAgentClass(agentsConfigProvider.getDeviceAgentClass());

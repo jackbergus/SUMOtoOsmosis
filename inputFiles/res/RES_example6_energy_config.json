@@ -2,7 +2,7 @@
   "simulationDate": "20160504:0000",
   "edgeDatacenters": [
     {
-      "name": "Edge_1",
+      "name": "Edge_M_1",
       "type": "edge",
       "energyManagementPolicy": {
         "className": "ExportLimitEnergyManagementPolicy"
@@ -17,7 +17,7 @@
       ],
       "powerGrid": [
         {
-          "country": "Poland",
+          "country": "Germany",
           "priceForEnergy": "0.2"
         }
       ],
@@ -27,30 +27,18 @@
           "type": "PV_PANELS",
           "technology": "CIS",
           "angle": 50,
-          "peakPower": 200,
+          "peakPower": 50,
           "loss": 20,
           "location": {
-            "latitude": 50.0,
-            "longitude": 20.0,
-            "elevation": 0.0
-          }
-        },
-        {
-          "name": "PV_panels_2",
-          "type": "PV_PANELS",
-          "angle": "70",
-          "peakPower": 100,
-          "loss": 15,
-          "location": {
-            "latitude": 30.0,
-            "longitude": 10.5,
+            "latitude": 52.52,
+            "longitude": 13.40,
             "elevation": 0.0
           }
         }
       ]
     },
     {
-      "name": "Edge_2",
+      "name": "Edge_M_2",
       "type": "edge",
       "energyManagementPolicy": {
         "className": "ExportLimitEnergyManagementPolicy"
@@ -74,7 +62,7 @@
           "name": "PV_panels_1",
           "type": "PV_PANELS",
           "angle": 10,
-          "peakPower": 100,
+          "peakPower": 50,
           "loss": 10,
           "location": {
             "latitude": 10.0,
@@ -87,12 +75,12 @@
   ],
   "cloudDatacenters": [
     {
-      "name": "Cloud_1",
+      "name": "Cloud_M_1",
       "type": "cloud",
       "energyManagementPolicy": {
         "className": "ExportLimitWithEnergyStoragePolicy"
       },
-      "utilization" : "40",
+      "utilization" : "30",
       "energyStorage": [
         {
           "type": "BATTERY",
@@ -102,7 +90,7 @@
       ],
       "powerGrid": [
         {
-          "country": "Poland",
+          "country": "Ireland",
           "priceForEnergy": "0.4"
         }
       ],
@@ -110,24 +98,12 @@
         {
           "name": "PV_panels_1",
           "type": "PV_PANELS",
-          "peakPower": 70,
+          "peakPower": 1000,
           "loss": "5",
           "angle": "40",
           "location": {
-            "latitude": 30.0,
-            "longitude": 24.1,
-            "elevation": 0.0
-          }
-        },
-        {
-          "name": "PV_panels_2",
-          "type": "PV_PANELS",
-          "loss": 5,
-          "peakPower": 60,
-          "angle": "30",
-          "location": {
-            "latitude": 20.7,
-            "longitude": 7.4,
+            "latitude": 53.35,
+            "longitude": -6.30,
             "elevation": 0.0
           }
         }

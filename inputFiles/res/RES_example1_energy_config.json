@@ -42,43 +42,8 @@
           "peakPower": 100,
           "loss": 15,
           "location": {
-            "latitude": 30.0,
-            "longitude": 10.5,
-            "elevation": 0.0
-          }
-        }
-      ]
-    },
-    {
-      "name": "Edge_2",
-      "type": "edge",
-      "energyManagementPolicy": {
-        "className": "ExportLimitEnergyManagementPolicy"
-      },
-      "utilization" : "50",
-      "energyStorage": [
-        {
-          "type": "BATTERY",
-          "capacity": "100",
-          "currentEnergy": "20"
-        }
-      ],
-      "powerGrid": [
-        {
-          "country": "Ukraine",
-          "priceForEnergy": "0.5"
-        }
-      ],
-      "energySources": [
-        {
-          "name": "PV_panels_1",
-          "type": "PV_PANELS",
-          "angle": 10,
-          "peakPower": 100,
-          "loss": 10,
-          "location": {
-            "latitude": 10.0,
-            "longitude": 43.4,
+            "latitude": 50.1,
+            "longitude": 20.1,
             "elevation": 0.0
           }
         }
@@ -126,8 +91,8 @@
           "peakPower": 60,
           "angle": "30",
           "location": {
-            "latitude": 20.7,
-            "longitude": 7.4,
+            "latitude": 30.2,
+            "longitude": 24.1,
             "elevation": 0.0
           }
         }

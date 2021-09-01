@@ -1,7 +1,7 @@
 {   
    "edgeDatacenter":[
 	{
-		"name":"Edge_1",
+		"name":"Edge_M_1",
 		"type":"edge",
 		"schedulingInterval":1.0,
 		"vmAllocationPolicy":{
@@ -365,7 +365,7 @@
 		]					
     },
 	{
-		   "name":"Edge_2",
+		   "name":"Edge_M_2",
 		   "type":"edge",
 		   "schedulingInterval":1.0,
 		   "vmAllocationPolicy":{
@@ -638,7 +638,7 @@
    "trace_flag":false,
    "cloudDatacenter": [
     {
-		"name": "Cloud_1",
+		"name": "Cloud_M_1",
 		"type":"cloud",
 		"vmAllocationPolicy": "VmAllocationPolicyCombinedLeastFullFirst",
 		"hosts": 

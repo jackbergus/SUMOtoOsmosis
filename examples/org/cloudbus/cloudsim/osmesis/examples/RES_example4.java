@@ -43,6 +43,11 @@ import java.util.stream.Collectors;
  *
  * Osmotic Agents are implemented following MAPE (Monitor-Analyze-Plan-Execute) control loop principle.
  * The loop is triggered no more often than every 15 minutes.
+ *
+ * Agents use adaptive algorithm as presented in:
+ * Tomasz Szydlo, Chris Gniady:
+ * Renewable Energy-Aware Heuristic Algorithms for Edge Server Selection for Stream Data Processing. ICCS (4) 2021: 639-646
+ *
  */
 
 public class RES_example4 {
@@ -54,10 +59,7 @@ public class RES_example4 {
 
     OsmosisBuilder topologyBuilder;
     OsmesisBroker osmesisBroker;
-    List<OsmesisDatacenter> datacenters;
-    List<MEL> melList;
     EdgeSDNController edgeSDNController;
-    List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
         RES_example4 osmosis = new RES_example4();

@@ -3,7 +3,7 @@ package org.cloudbus.agent;
 public class CentralAgent extends AbstractAgent{
     private static CentralAgent instance;
 
-    private static String CENTRAL_AGENT_NAME="CentralOsmoticAgent";
+    public static String CENTRAL_AGENT_NAME="CentralOsmoticAgent";
 
     public static CentralAgent getInstance()
     {

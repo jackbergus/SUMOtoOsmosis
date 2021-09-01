@@ -30,6 +30,10 @@ public class AgentMessage {
         this.SOURCE = SOURCE;
     }
 
+    public String getSOURCE() {
+        return SOURCE;
+    }
+
     public void setDESTINATION(Collection<String> DESTINATION) {
         this.DESTINATION = DESTINATION;
     }

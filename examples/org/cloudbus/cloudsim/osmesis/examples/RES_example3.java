@@ -54,10 +54,7 @@ public class RES_example3 {
 
     OsmosisBuilder topologyBuilder;
     OsmesisBroker osmesisBroker;
-    List<OsmesisDatacenter> datacenters;
-    List<MEL> melList;
     EdgeSDNController edgeSDNController;
-    List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
         RES_example3 osmosis = new RES_example3();

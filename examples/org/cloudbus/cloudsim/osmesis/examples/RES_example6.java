@@ -39,10 +39,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A simple example that use Osmotic Agents.
+ * A complex example that use Osmotic Agents. MEL's are available on two Edges.
  *
- * Osmotic Agents are implemented following MAPE (Monitor-Analyze-Plan-Execute) control loop principle.
- * The loop is triggered no more often than every 15 minutes.
  */
 
 public class RES_example6 {
@@ -50,14 +48,11 @@ public class RES_example6 {
     public static final String configurationFile = "inputFiles/res/RES_example6_infrastructure_2edges.json";
     public static final String osmesisAppFile =  "inputFiles/res/RES_example2_workload_single_day.csv";
     //RES configuration is the same as in the example 1.
-    public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example1_energy_config.json";
+    public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example6_energy_config.json";
 
     OsmosisBuilder topologyBuilder;
     OsmesisBroker osmesisBroker;
-    List<OsmesisDatacenter> datacenters;
-    List<MEL> melList;
     EdgeSDNController edgeSDNController;
-    List<Vm> vmList;
 
     public static void main(String[] args) throws Exception {
         RES_example6 osmosis = new RES_example6();
@@ -78,8 +73,8 @@ public class RES_example6 {
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
-        agentBroker.addAgentLink("temperature_1", "Edge_1");
-        agentBroker.addAgentLink("temperature_1", "Edge_2");
+        agentBroker.addAgentLink("temperature_1", "Edge_M_1");
+        agentBroker.addAgentLink("temperature_1", "Edge_M_2");
 
         //Osmotic Agents time interval
         agentBroker.setMAPEInterval(15*60);
@@ -91,7 +86,11 @@ public class RES_example6 {
         agentBroker.setEnergyControllers(energyControllers);
 
         //Set the simulation start time
-        agentBroker.setSimulationStartTime("20160501:0000");
+        //String simulationStartTime="20160101:0000";
+        String simulationStartTime="20160501:0000";
+        //String simulationStartTime="20160901:0000";
+
+        agentBroker.setSimulationStartTime(simulationStartTime);
 
         // Initialize the CloudSim library
         CloudSim.init(num_user, calendar, trace_flag);
@@ -140,9 +139,9 @@ public class RES_example6 {
         Log.printLine();
         Log.printLine("Post-mortem RES energy analysis!");
         RESPrinter res_printer = new RESPrinter();
-        res_printer.postMortemAnalysis(energyControllers,"20160101:0000", true,36);
-        res_printer.postMortemAnalysis(energyControllers,"20160501:0000", false, 36);
-        res_printer.postMortemAnalysis(energyControllers,"20160901:0000", false, 36);
+        res_printer.postMortemAnalysis(energyControllers,simulationStartTime, true,36);
+        //res_printer.postMortemAnalysis(energyControllers,simulationStartTime, false, 36);
+        //res_printer.postMortemAnalysis(energyControllers,"20160901:0000", false, 36);
         Log.printLine("End of RES analysis!");
     }
 

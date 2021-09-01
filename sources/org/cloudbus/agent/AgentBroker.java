@@ -28,10 +28,13 @@ public class AgentBroker {
     //Agents classes
     private Class dcAgentClass;
     private Class deviceAgentClass;
+    private Class centralAgentClass;
     private Class agentMessageClass;
 
     private LocalDateTime simulationStartTime;
     private LocalDateTime simulationCurrentTime;
+
+    private boolean agentsAvailable = false;
 
     private void updateEnergyControllersTime(){
         for (EnergyController controller: energyControllers.values()){
@@ -46,16 +49,24 @@ public class AgentBroker {
     }
 
     public void updateTime(double clock) {
+        if (!agentsAvailable) return;
         simulationCurrentTime = simulationStartTime.plusNanos((long) (clock*1000000000));
         updateEnergyControllersTime();
     }
 
     public void setDcAgentClass(Class dcAgentClass) {
         this.dcAgentClass = dcAgentClass;
+        agentsAvailable = true;
     }
 
     public void setDeviceAgentClass(Class deviceAgentClass) {
         this.deviceAgentClass = deviceAgentClass;
+        agentsAvailable = true;
+    }
+
+    public void setCentralAgentClass(Class centralAgentClass) {
+        this.centralAgentClass = centralAgentClass;
+        agentsAvailable = true;
     }
 
     public void setAgentMessageClass(Class agentMessageClass) {
@@ -138,7 +149,13 @@ public class AgentBroker {
     public void distributeMessage(AgentMessage message){
         Collection<String> dst;
         if (message.getDESTINATION() == null){
-            dst = linksTopology.get(message.SOURCE);
+            if (message.getSOURCE().equals(CentralAgent.CENTRAL_AGENT_NAME)){
+                dst = new ArrayList<>();
+                dst.addAll(agentsDC.keySet());
+                dst.addAll(agentsDevices.keySet());
+            } else {
+                dst = linksTopology.get(message.getSOURCE());
+            }
         } else {
             dst = message.getDESTINATION();
         }
