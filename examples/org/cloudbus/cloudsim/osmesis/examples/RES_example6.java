@@ -87,7 +87,7 @@ public class RES_example6 {
         }
 
         //Osmotic Agents time interval
-        agentBroker.setMAPEInterval(15*60);
+        agentBroker.setMAPEInterval(provider.getMAPEInterval());
 
         //Create Energy Controllers
         Map<String, EnergyController> energyControllers = getEnergyControllers();
@@ -163,7 +163,7 @@ public class RES_example6 {
                 .collect(Collectors.toMap(EnergyController::getEdgeDatacenterId, Function.identity()));
     }
 
-    private ConfiguationEntity buildTopologyFromFile(String filePath) throws Exception {
+    private ConfiguationEntity buildTopologyFromFile(String filePath) {
         System.out.println("Creating topology from file " + filePath);
         ConfiguationEntity conf  = null;
         try (FileReader jsonFileReader = new FileReader(filePath)){

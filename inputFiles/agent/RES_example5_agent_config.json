@@ -3,6 +3,7 @@
   "DeviceAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_DeviceAgent",
   "CentralAgentClassName": "",
   "AgentMessageClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_AgentMessage",
+  "MAPEInterval": 900.0,
   "TopologyLinks": [
     {
       "AgentA": "Edge_1",

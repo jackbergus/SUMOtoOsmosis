@@ -25,6 +25,10 @@ public class AgentConfigProvider {
         return Class.forName(agentsConfig.AgentMessageClassName);
     }
 
+    public double getMAPEInterval(){
+        return agentsConfig.MAPEInterval;
+    }
+
     public Collection<TopologyLink> getTopologyLinks(){
         return agentsConfig.TopologyLinks;
     }

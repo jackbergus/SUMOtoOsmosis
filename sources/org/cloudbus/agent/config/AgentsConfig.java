@@ -7,5 +7,6 @@ public class AgentsConfig {
     public String DeviceAgentClassName;
     public String CentralAgentClassName;
     public String AgentMessageClassName;
+    public double MAPEInterval;
     public Collection<TopologyLink> TopologyLinks;
 }
