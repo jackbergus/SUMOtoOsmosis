@@ -2,10 +2,10 @@ package org.cloudbus.agent.config;
 
 import java.util.Collection;
 
-public class ConfigProvider {
+public class AgentConfigProvider {
     private final AgentsConfig agentsConfig;
 
-    public ConfigProvider(AgentsConfig agentsConfig) {
+    public AgentConfigProvider(AgentsConfig agentsConfig) {
         this.agentsConfig = agentsConfig;
     }
 

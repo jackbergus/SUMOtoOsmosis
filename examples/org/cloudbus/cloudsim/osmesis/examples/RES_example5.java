@@ -12,18 +12,13 @@
 
 package org.cloudbus.cloudsim.osmesis.examples;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.cloudbus.agent.AgentBroker;
-import org.cloudbus.agent.config.AgentsConfig;
-import org.cloudbus.agent.config.ConfigLoader;
-import org.cloudbus.agent.config.ConfigProvider;
+import org.cloudbus.agent.config.AgentConfigLoader;
+import org.cloudbus.agent.config.AgentConfigProvider;
 import org.cloudbus.agent.config.TopologyLink;
 import org.cloudbus.cloudsim.Log;
-import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
-import org.cloudbus.cloudsim.edge.core.edge.MEL;
 import org.cloudbus.cloudsim.edge.utils.LogUtil;
 import org.cloudbus.cloudsim.osmesis.examples.uti.LogPrinter;
 import org.cloudbus.cloudsim.osmesis.examples.uti.PrintResults;
@@ -78,19 +73,16 @@ public class RES_example5 {
         AgentBroker agentBroker = AgentBroker.getInstance();
 
         // Getting configuration from json and entering classes to Agent Broker
-        ConfigProvider agentsConfigProvider = new ConfigProvider(ConfigLoader.getFromFile(AGENT_CONFIG_FILE));
+        AgentConfigProvider provider = new AgentConfigProvider(AgentConfigLoader.getFromFile(AGENT_CONFIG_FILE));
 
         // In this example, the Central Agent is not used
-        //Class<?> takenCentralAgentClass = agentsConfigProvider.getCentralAgentClass();
-        //agentBroker.setCentralAgentClass(agentsConfigProvider.getCentralAgentClass());
-
-        agentBroker.setDcAgentClass(agentsConfigProvider.getDCAgentClass());
-        agentBroker.setDeviceAgentClass(agentsConfigProvider.getDeviceAgentClass());
-        agentBroker.setAgentMessageClass(agentsConfigProvider.getAgentMessageClass());
+        agentBroker.setDcAgentClass(provider.getDCAgentClass());
+        agentBroker.setDeviceAgentClass(provider.getDeviceAgentClass());
+        agentBroker.setAgentMessageClass(provider.getAgentMessageClass());
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
-        for (TopologyLink link : agentsConfigProvider.getTopologyLinks()) {
+        for (TopologyLink link : provider.getTopologyLinks()) {
             agentBroker.addAgentLink(link.AgentA, link.AgentB);
         }
 

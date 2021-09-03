@@ -6,7 +6,7 @@ import com.google.gson.GsonBuilder;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
-public class ConfigLoader {
+public class AgentConfigLoader {
     private static final Gson gson = new GsonBuilder().create();
 
     public static AgentsConfig getFromFile(String filename) throws FileNotFoundException {
