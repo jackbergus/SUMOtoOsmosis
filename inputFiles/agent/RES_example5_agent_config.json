@@ -1,7 +1,7 @@
 {
   "DCAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_DCAgent",
   "DeviceAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_DeviceAgent",
-  "CentralAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example5_CentralAgent",
+  "CentralAgentClassName": "",
   "AgentMessageClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example4_AgentMessage",
   "TopologyLinks": [
     {
