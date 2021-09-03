@@ -13,6 +13,9 @@
 package org.cloudbus.cloudsim.osmesis.examples;
 
 import org.cloudbus.agent.AgentBroker;
+import org.cloudbus.agent.config.AgentConfigLoader;
+import org.cloudbus.agent.config.AgentConfigProvider;
+import org.cloudbus.agent.config.TopologyLink;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -49,6 +52,7 @@ public class RES_example6 {
     public static final String osmesisAppFile =  "inputFiles/res/RES_example2_workload_single_day.csv";
     //RES configuration is the same as in the example 1.
     public static final String RES_CONFIG_FILE =  "inputFiles/res/RES_example6_energy_config.json";
+    public static final String AGENT_CONFIG_FILE="inputFiles/agent/RES_example6_agent_config.json";
 
     OsmosisBuilder topologyBuilder;
     OsmesisBroker osmesisBroker;
@@ -67,14 +71,20 @@ public class RES_example6 {
 
         // Set Agent and Message classes
         AgentBroker agentBroker = AgentBroker.getInstance();
-        agentBroker.setDcAgentClass(RES_example6_DCAgent.class);
-        agentBroker.setDeviceAgentClass(RES_example6_DeviceAgent.class);
-        agentBroker.setAgentMessageClass(RES_example6_AgentMessage.class);
+
+        // Getting configuration from json and entering classes to Agent Broker
+        AgentConfigProvider provider = new AgentConfigProvider(AgentConfigLoader.getFromFile(AGENT_CONFIG_FILE));
+
+        // In this example, the Central Agent is not used
+        agentBroker.setDcAgentClass(provider.getDCAgentClass());
+        agentBroker.setDeviceAgentClass(provider.getDeviceAgentClass());
+        agentBroker.setAgentMessageClass(provider.getAgentMessageClass());
 
         //Simulation is not started yet thus there is not any MELs.
         //Links for Agents between infrastructure elements.
-        agentBroker.addAgentLink("temperature_1", "Edge_M_1");
-        agentBroker.addAgentLink("temperature_1", "Edge_M_2");
+        for (TopologyLink link : provider.getTopologyLinks()) {
+            agentBroker.addAgentLink(link.AgentA, link.AgentB);
+        }
 
         //Osmotic Agents time interval
         agentBroker.setMAPEInterval(15*60);

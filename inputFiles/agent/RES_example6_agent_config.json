@@ -1,0 +1,16 @@
+{
+  "DCAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example6_DCAgent",
+  "DeviceAgentClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example6_DeviceAgent",
+  "CentralAgentClassName": "",
+  "AgentMessageClassName": "org.cloudbus.cloudsim.osmesis.examples.RES_example6_AgentMessage",
+  "TopologyLinks": [
+    {
+      "AgentA": "temperature_1",
+      "AgentB": "Edge_M_1"
+    },
+    {
+      "AgentA": "temperature_1",
+      "AgentB": "Edge_M_2"
+    }
+  ]
+}
