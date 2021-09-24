@@ -21,6 +21,9 @@ public class RES_example6_DCAgent extends DCAgent {
 
     List<String> melNames = new ArrayList<>();
     double resPower;
+    double lowEmission;
+    double lat;
+    double lon;
 
     public RES_example6_DCAgent() {
         //This is necessary for dynamic agent instance creation.
@@ -37,8 +40,12 @@ public class RES_example6_DCAgent extends DCAgent {
         }
 
         //Get current Green Energy Ratio
+        //it is assumed that there is at least one RES source
         if (energyController != null) {
             resPower = energyController.getRESCurrentPower();
+            lowEmission = energyController.getPowerGrids().get(0).getLowEmission();
+            lat = energyController.getEnergySources().get(0).getLocation().getLatitude();
+            lon = energyController.getEnergySources().get(0).getLocation().getLongitude();
         }
     }
 
@@ -55,6 +62,10 @@ public class RES_example6_DCAgent extends DCAgent {
         }
 
         message.setGreenEnergyRatio(resPower);
+        message.setLowEmissionPercentage(lowEmission);
+
+        message.setLat(lat);
+        message.setLon(lon);
 
         //Send to all neighbours (null destination means all - follows the agent topology defined in the example file).
         message.setDESTINATION(null);

@@ -26,6 +26,9 @@ public class RES_example6_DeviceAgent extends DeviceAgent {
     Map<String, String> tempRoutingTable = new HashMap<>();
     Map<String, Double> tempBestRatio = new HashMap<>();
 
+    //devices are located in Berlin
+
+
     public RES_example6_DeviceAgent() {
         //This is necessary for dynamic agent instance creation.
     }
@@ -35,6 +38,7 @@ public class RES_example6_DeviceAgent extends DeviceAgent {
         super.monitor();
 
         //Do nothing.
+
     }
 
     @Override
@@ -53,16 +57,27 @@ public class RES_example6_DeviceAgent extends DeviceAgent {
         return name.replaceAll(".[0-9]+$", ".*");
     }
 
-    private void updateTempRoutingTable(String abs_mel, String inst_mel, double res){
+    //selects with the highest value
+    private void updateTempRoutingTable(String abs_mel, String inst_mel, double val){
         if (!tempRoutingTable.containsKey(abs_mel)){
             tempRoutingTable.put(abs_mel,inst_mel);
-            tempBestRatio.put(abs_mel,res);
+            tempBestRatio.put(abs_mel,val);
         }
 
-        if (tempBestRatio.get(abs_mel)<res){
-            tempBestRatio.put(abs_mel,res);
+        if (tempBestRatio.get(abs_mel)<val){
+            tempBestRatio.put(abs_mel,val);
             tempRoutingTable.put(abs_mel,inst_mel);
         }
+    }
+
+    private double haversineDistance(double lat_1, double lon_1, double lat_2, double lon_2){
+        double d2r = (Math.PI / 180.0);
+        double d_long = (lon_2 - lon_1) * d2r;
+        double d_lat = (lat_2 - lat_1) * d2r;
+        double a = Math.pow(Math.sin(d_lat / 2.0), 2.0) + Math.cos(lat_1 * d2r) * Math.cos(lat_2 * d2r)
+                * Math.pow(Math.sin(d_long / 2.0), 2.0);
+        double c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+        return 6378.1370 * c;
     }
 
     @Override
@@ -76,14 +91,41 @@ public class RES_example6_DeviceAgent extends DeviceAgent {
         tempRoutingTable.clear();
         tempBestRatio.clear();
 
-        //choose the MEL instance from Edge with highest RES value
-        for(AgentMessage message:messages){
-            RES_example6_AgentMessage ex4_message = (RES_example6_AgentMessage) message;
+        //check if there is no energy from RES
+        boolean noRES=false;
+        for(AgentMessage message:messages) {
+            RES_example6_AgentMessage ex6_message = (RES_example6_AgentMessage) message;
+            double res = ex6_message.getGreenEnergyRatio();
+            if (res>0.1) noRES = true;
+        }
 
-            double res = ex4_message.getGreenEnergyRatio();
-            for(String mel_name:ex4_message.getAvailableMELs()){
-                if (isInstance(mel_name)){
-                    updateTempRoutingTable(getAbstract(mel_name), mel_name, res);
+        if (!noRES){
+            for (AgentMessage message : messages) {
+                RES_example6_AgentMessage ex6_message = (RES_example6_AgentMessage) message;
+
+                //choose the MEL instance that is closest to the device
+                //double val = - haversineDistance(ex6_message.getLat(), ex6_message.getLon(), 52.52, 13.40 );
+
+                //choose the MEL instance that is located in the datacenter with highest percentage of low-carbon power
+                // sources in the power grid
+                double val = ex6_message.getLowEmissionPercentage();
+
+                for (String mel_name : ex6_message.getAvailableMELs()) {
+                    if (isInstance(mel_name)) {
+                        updateTempRoutingTable(getAbstract(mel_name), mel_name, val);
+                    }
+                }
+            }
+        } else {
+            //choose the MEL instance from Edge with highest RES value
+            for (AgentMessage message : messages) {
+                RES_example6_AgentMessage ex6_message = (RES_example6_AgentMessage) message;
+
+                double res = ex6_message.getGreenEnergyRatio();
+                for (String mel_name : ex6_message.getAvailableMELs()) {
+                    if (isInstance(mel_name)) {
+                        updateTempRoutingTable(getAbstract(mel_name), mel_name, res);
+                    }
                 }
             }
         }

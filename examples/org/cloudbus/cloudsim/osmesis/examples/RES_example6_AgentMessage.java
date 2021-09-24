@@ -21,9 +21,36 @@ import java.util.Set;
 public class RES_example6_AgentMessage extends AgentMessage {
     List<String> availableMELs = new ArrayList<>();
     double greenEnergyRatio;
+    double lowEmissionPercentage;
+    double lat;
+    double lon;
 
     public RES_example6_AgentMessage() {
         //This is necessary for dynamic agent instance creation.
+    }
+
+    public double getLowEmissionPercentage() {
+        return lowEmissionPercentage;
+    }
+
+    public void setLowEmissionPercentage(double lowEmissionPercentage) {
+        this.lowEmissionPercentage = lowEmissionPercentage;
+    }
+
+    public double getLat() {
+        return lat;
+    }
+
+    public void setLat(double lat) {
+        this.lat = lat;
+    }
+
+    public double getLon() {
+        return lon;
+    }
+
+    public void setLon(double lon) {
+        this.lon = lon;
     }
 
     public double getGreenEnergyRatio() {

@@ -86,7 +86,7 @@ public class RESPrinter {
     private void AnalyseFlowsRES(List<WorkflowInfo> tags) {
         Log.printLine();
         Log.printLine("=========================== Osmosis App Results RES (START = "+timeStartRES+") (step = "+print_step+")========================");
-        Log.printLine(String.format("%1s|%11s|%18s|%13s|%19s|%22s|%15s|%22s|%23s|%22s"
+        Log.printLine(String.format("%1s|%11s|%18s|%13s|%19s|%22s|%15s|%22s|%23s|%22s|%22s"
                 ,"App_ID"
                 ,"AppName"
                 ,"Transaction"
@@ -96,12 +96,18 @@ public class RESPrinter {
                 ,"Cloudlet DC"
                 ,"Cloudlet CPU Time"
                 ,"Cloudlet Start Time"
-                ,"CPU RES utilisation"));
+                ,"CPU RES utilisation"
+                ,"CPU low-emission utilisation"));
 
         double transactionTotalTime;
         double transactionTotalCpuTime;
 
         double transaction_total_CPU_RES_utilization=0;
+        double transaction_total_CPU_lowEmission_utilization=0;
+
+        double transaction_CPU_RES_utilization = 0;
+        double transaction_CPU_lowEmission_utilization = 0;
+
 
         for(WorkflowInfo workflowTag : tags){
             transactionTotalTime =  workflowTag.getIotDeviceFlow().getTransmissionTime() + workflowTag.getEdgeLet().getActualCPUTime()
@@ -124,6 +130,9 @@ public class RESPrinter {
             double edglet_power = energyControllers.get(edglet_dc).getRESCurrentPower(timeStartRES.plusNanos((long) (edglet_start_time*1000000000)));
             double cloudlet_power = energyControllers.get(cloudlet_dc).getRESCurrentPower(timeStartRES.plusNanos((long) (cloudlet_start_time*1000000000)));
 
+            double edglet_lowEmission = energyControllers.get(edglet_dc).getPowerGrids().get(0).getLowEmission();
+            double cloudlet_lowEmission = energyControllers.get(cloudlet_dc).getPowerGrids().get(0).getLowEmission();
+
             if (edglet_power > RESaverage_power.get(edglet_dc)){
                 edglet_power = RESaverage_power.get(edglet_dc);
             }
@@ -132,10 +141,21 @@ public class RESPrinter {
                 cloudlet_power = RESaverage_power.get(cloudlet_dc);
             }
 
-            double ed_part = (edglet_power/average_power.get(edglet_dc)) * edglet_cpu_time; // * RESutilization.get(edglet_dc)
-            double cl_part = (cloudlet_power/average_power.get(cloudlet_dc)) * cloudlet_cpu_time; // * RESutilization.get(cloudlet_dc)
+            double ed_part=0;
+            double cl_part=0;
+            transaction_CPU_RES_utilization = 0;
+            transaction_CPU_lowEmission_utilization = 0;
+            if (edglet_power > 0.0 && cloudlet_power > 0.0){
+                ed_part = (edglet_power/average_power.get(edglet_dc)) * edglet_cpu_time; // * RESutilization.get(edglet_dc)
+                cl_part = (cloudlet_power/average_power.get(cloudlet_dc)) * cloudlet_cpu_time; // * RESutilization.get(cloudlet_dc)
 
-            double transaction_CPU_RES_utilization = (ed_part + cl_part) / (edglet_cpu_time+cloudlet_cpu_time) * 100;
+                transaction_CPU_RES_utilization = (ed_part + cl_part) / (edglet_cpu_time+cloudlet_cpu_time) * 100;
+            } else {
+                ed_part = (edglet_lowEmission/100.0) * edglet_cpu_time; // * RESutilization.get(edglet_dc)
+                cl_part = (cloudlet_lowEmission/100.0) * cloudlet_cpu_time; // * RESutilization.get(cloudlet_dc)
+
+                transaction_CPU_lowEmission_utilization = (ed_part + cl_part) / (edglet_cpu_time+cloudlet_cpu_time) * 100;
+            }
 
             if (transaction_CPU_RES_utilization > 100.0){
                 transaction_CPU_RES_utilization = 100.0;
@@ -143,8 +163,11 @@ public class RESPrinter {
 
             transaction_total_CPU_RES_utilization+=transaction_CPU_RES_utilization;
 
+            transaction_total_CPU_lowEmission_utilization+=transaction_CPU_lowEmission_utilization;
+
+
             if (worflow_id % print_step == 0) {
-                Log.printLine(String.format("%1s %15s %15s %18s %18s %21s %15s %21s %20s %20s"
+                Log.printLine(String.format("%1s %15s %15s %18s %18s %21s %15s %21s %20s %20s %20s"
                         , app_id
                         , app_name
                         , worflow_id
@@ -154,11 +177,13 @@ public class RESPrinter {
                         , cloudlet_dc
                         , new DecimalFormat("0.00").format(cloudlet_cpu_time)
                         , new DecimalFormat("0.00").format(cloudlet_start_time)
-                        , new DecimalFormat("0.00").format(transaction_CPU_RES_utilization)));
+                        , new DecimalFormat("0.00").format(transaction_CPU_RES_utilization)
+                        , new DecimalFormat("0.00").format(transaction_CPU_lowEmission_utilization)) );
             }
         }
 
         Log.printLine(String.format("Self-consumed RES Utilization for workload CPU processing: %s",transaction_total_CPU_RES_utilization/tags.size()));
+        Log.printLine(String.format("Self-consumed RES Utilization for workload CPU processing: %s",transaction_total_CPU_lowEmission_utilization/tags.size()));
     }
 
 }

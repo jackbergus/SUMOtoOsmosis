@@ -18,17 +18,20 @@
       "powerGrid": [
         {
           "country": "Germany",
-          "priceForEnergy": "0.2"
+          "priceForEnergy": "0.148",
+          "emissionCO2": "303",
+          "lowEmission": "65",
+          "renewable": "48"
         }
       ],
       "energySources": [
         {
           "name": "PV_panels_1",
           "type": "PV_PANELS",
-          "technology": "CIS",
+          "technology": "crystSi",
           "angle": 50,
           "peakPower": 50,
-          "loss": 20,
+          "loss": 14,
           "location": {
             "latitude": 52.52,
             "longitude": 13.40,
@@ -53,20 +56,25 @@
       ],
       "powerGrid": [
         {
-          "country": "Ukraine",
-          "priceForEnergy": "0.5"
+          "country": "France",
+          "priceForEnergy": "0.5",
+          "priceForEnergy": "0.133",
+          "emissionCO2": "38",
+          "lowEmission": "97",
+          "renewable": "12"
         }
       ],
       "energySources": [
         {
           "name": "PV_panels_1",
           "type": "PV_PANELS",
+          "technology": "crystSi",		  
           "angle": 10,
           "peakPower": 50,
-          "loss": 10,
+          "loss": 14,
           "location": {
-            "latitude": 10.0,
-            "longitude": 43.4,
+            "latitude": 48.8,
+            "longitude": 2.30,
             "elevation": 0.0
           }
         }
@@ -91,15 +99,19 @@
       "powerGrid": [
         {
           "country": "Ireland",
-          "priceForEnergy": "0.4"
+          "priceForEnergy": "0.196",
+          "emissionCO2": "252",
+          "lowEmission": "62",
+          "renewable": "60"
         }
       ],
       "energySources": [
         {
           "name": "PV_panels_1",
           "type": "PV_PANELS",
+          "technology": "crystSi",		  
           "peakPower": 1000,
-          "loss": "5",
+          "loss": "14",
           "angle": "40",
           "location": {
             "latitude": 53.35,

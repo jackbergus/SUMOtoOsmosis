@@ -97,8 +97,8 @@ public class RES_example6 {
 
         //Set the simulation start time
         //String simulationStartTime="20160101:0000";
-        String simulationStartTime="20160501:0000";
-        //String simulationStartTime="20160901:0000";
+        //String simulationStartTime="20160501:0000";
+        String simulationStartTime="20160901:0000";
 
         agentBroker.setSimulationStartTime(simulationStartTime);
 

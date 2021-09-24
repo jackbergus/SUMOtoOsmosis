@@ -16,7 +16,7 @@ public class PVInstallation extends RenewableEnergySource {
 
     @ConstructorProperties({"technology", "angle", "peakPower", "loss"})
     public PVInstallation(PVTechnology pvTechnology, double tiltAngle, int peakPower, double systemLoss) {
-        this.pvTechnology = pvTechnology == null ? PVTechnology.CRYSTALLINE_SILICON : pvTechnology;
+        this.pvTechnology = pvTechnology == null ? PVTechnology.crystSi : pvTechnology;
         this.tiltAngle = tiltAngle;
         this.peakPower = peakPower;
         this.systemLoss = systemLoss;

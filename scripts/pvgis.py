@@ -41,7 +41,10 @@ def fetch_data_from_pvgis(source, year):
         params['peakpower'] = source['peakPower']
         params['pvtechchoice'] = parse_json_field(source, 'technology')
     params['pvcalculation'] = pvcalculation
-    params['angle'] = parse_json_field(source, 'angle')
+
+    #params['angle'] = parse_json_field(source, 'angle')
+    params['optimalangles'] = 1
+	
     # aspect, trackingtype
     print(params, end="\n")
     response = requests.get(base_url, params=params)
