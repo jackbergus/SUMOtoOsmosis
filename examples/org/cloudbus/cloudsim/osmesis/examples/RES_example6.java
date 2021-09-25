@@ -149,7 +149,7 @@ public class RES_example6 {
         Log.printLine();
         Log.printLine("Post-mortem RES energy analysis!");
         RESPrinter res_printer = new RESPrinter();
-        res_printer.postMortemAnalysis(energyControllers,simulationStartTime, true,36);
+        res_printer.postMortemAnalysis(energyControllers,simulationStartTime, true,1);
         //res_printer.postMortemAnalysis(energyControllers,simulationStartTime, false, 36);
         //res_printer.postMortemAnalysis(energyControllers,"20160901:0000", false, 36);
         Log.printLine("End of RES analysis!");

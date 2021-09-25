@@ -21,6 +21,7 @@ public class RESPrinter {
     Map<String, Double> RESaverage_power;
     Map<String, Double> average_power;
     Map<String, Double> RESutilization;
+    Map<String, Integer> statistics;
 
     private LocalDateTime timeStartRES;
     int print_step;
@@ -32,12 +33,14 @@ public class RESPrinter {
         RESaverage_power = new HashMap<>();
         average_power = new HashMap<>();
         RESutilization = new HashMap<>();
+        statistics = new HashMap<>();
     }
 
     public void postMortemAnalysis(Map<String, EnergyController> energyControllers, String time_s, boolean sources_details, int print_step) {
         RESannual.clear();
         RESaverage_power.clear();
         RESutilization.clear();
+        statistics.clear();
 
         this.energyControllers = energyControllers;
         this.print_step = print_step;
@@ -86,7 +89,7 @@ public class RESPrinter {
     private void AnalyseFlowsRES(List<WorkflowInfo> tags) {
         Log.printLine();
         Log.printLine("=========================== Osmosis App Results RES (START = "+timeStartRES+") (step = "+print_step+")========================");
-        Log.printLine(String.format("%1s|%11s|%18s|%13s|%19s|%22s|%15s|%22s|%23s|%22s|%22s"
+        Log.printLine(String.format("%1s\t%11s\t%18s\t%13s\t%19s\t%22s\t%15s\t%22s\t%23s\t%22s\t%22s"
                 ,"App_ID"
                 ,"AppName"
                 ,"Transaction"
@@ -143,16 +146,25 @@ public class RESPrinter {
 
             double ed_part=0;
             double cl_part=0;
+
+            double ed_alpha = 0;
+            double cl_alpha = 0;
             transaction_CPU_RES_utilization = 0;
             transaction_CPU_lowEmission_utilization = 0;
             if (edglet_power > 0.0 && cloudlet_power > 0.0){
+                //if there is energy from PV panels
                 ed_part = (edglet_power/average_power.get(edglet_dc)) * edglet_cpu_time; // * RESutilization.get(edglet_dc)
                 cl_part = (cloudlet_power/average_power.get(cloudlet_dc)) * cloudlet_cpu_time; // * RESutilization.get(cloudlet_dc)
 
+                ed_alpha = (edglet_power/average_power.get(edglet_dc));
+                cl_alpha = (cloudlet_power/average_power.get(cloudlet_dc));
+
                 transaction_CPU_RES_utilization = (ed_part + cl_part) / (edglet_cpu_time+cloudlet_cpu_time) * 100;
-            } else {
-                ed_part = (edglet_lowEmission/100.0) * edglet_cpu_time; // * RESutilization.get(edglet_dc)
-                cl_part = (cloudlet_lowEmission/100.0) * cloudlet_cpu_time; // * RESutilization.get(cloudlet_dc)
+            }
+
+            {
+                ed_part = (edglet_lowEmission/100.0*(1-ed_alpha) + ed_alpha) * edglet_cpu_time; // * RESutilization.get(edglet_dc)
+                cl_part = (cloudlet_lowEmission/100.0*(1-cl_alpha) + cl_alpha) * cloudlet_cpu_time; // * RESutilization.get(cloudlet_dc)
 
                 transaction_CPU_lowEmission_utilization = (ed_part + cl_part) / (edglet_cpu_time+cloudlet_cpu_time) * 100;
             }
@@ -167,7 +179,7 @@ public class RESPrinter {
 
 
             if (worflow_id % print_step == 0) {
-                Log.printLine(String.format("%1s %15s %15s %18s %18s %21s %15s %21s %20s %20s %20s"
+                Log.printLine(String.format("%1s\t%15s\t%15s\t%18s\t%18s\t%21s\t%15s\t%21s\t%20s\t%20s\t%20s"
                         , app_id
                         , app_name
                         , worflow_id
@@ -180,10 +192,16 @@ public class RESPrinter {
                         , new DecimalFormat("0.00").format(transaction_CPU_RES_utilization)
                         , new DecimalFormat("0.00").format(transaction_CPU_lowEmission_utilization)) );
             }
+
+            statistics.put(edglet_dc,statistics.getOrDefault(edglet_dc,0)+1);
         }
 
         Log.printLine(String.format("Self-consumed RES Utilization for workload CPU processing: %s",transaction_total_CPU_RES_utilization/tags.size()));
-        Log.printLine(String.format("Self-consumed RES Utilization for workload CPU processing: %s",transaction_total_CPU_lowEmission_utilization/tags.size()));
+        Log.printLine(String.format("Low carbon ES utilization for workload CPU processing: %s",transaction_total_CPU_lowEmission_utilization/tags.size()));
+
+        for(String s:statistics.keySet()){
+            Log.printLine(String.format("Datacenter: %s  count:%d", s,statistics.get(s)));
+        }
     }
 
 }

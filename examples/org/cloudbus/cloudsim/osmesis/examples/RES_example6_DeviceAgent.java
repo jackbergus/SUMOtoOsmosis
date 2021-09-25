@@ -104,11 +104,11 @@ public class RES_example6_DeviceAgent extends DeviceAgent {
                 RES_example6_AgentMessage ex6_message = (RES_example6_AgentMessage) message;
 
                 //choose the MEL instance that is closest to the device
-                //double val = - haversineDistance(ex6_message.getLat(), ex6_message.getLon(), 52.52, 13.40 );
+                double val = - haversineDistance(ex6_message.getLat(), ex6_message.getLon(), 52.52, 13.40 );
 
                 //choose the MEL instance that is located in the datacenter with highest percentage of low-carbon power
                 // sources in the power grid
-                double val = ex6_message.getLowEmissionPercentage();
+                //double val = ex6_message.getLowEmissionPercentage();
 
                 for (String mel_name : ex6_message.getAvailableMELs()) {
                     if (isInstance(mel_name)) {
