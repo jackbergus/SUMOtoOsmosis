@@ -180,7 +180,11 @@ public class ConfiguationEntity {
 		NetworkModelEntity networkModelEntity; // e.g. Wifi and xmpp
 		double max_battery_capacity;
 		double battery_sensing_rate;
-		double battery_sending_rate;		
+		double battery_sending_rate;
+		double battery_voltage;
+		boolean res_powered;
+		double solar_peak_power;
+		double max_charging_current;
 		double processingAbility;
 		EdgeLetEntity dataTemplate;
 		double bw;

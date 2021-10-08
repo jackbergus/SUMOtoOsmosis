@@ -72,4 +72,12 @@ public class EnergyController {
         }
         return power;
     }
+
+    public double getRESMaximumPower(){
+        double power=0.0;
+        for(RenewableEnergySource source:energySources){
+            power += source.getPeakPower();
+        }
+        return power;
+    }
 }

@@ -13,7 +13,7 @@ package org.cloudbus.cloudsim.edge.core.edge;
 
 /**
  * 
- * @author Khaled Alwasel
+ * @author Khaled Alwasel, Tomasz Szydlo
  * @contact kalwasel@gmail.com
  * @since IoTSim-Osmosis 1.0
  * 
@@ -25,7 +25,58 @@ public class Battery {
 	private double batterySensingRate;
 	private double batterySendingRate;
 
-	
+	private boolean resPowered;
+	private double peakSolarPower;
+	private double batteryVoltage;
+	private double maxChargingCurrent;
+
+	boolean charging;
+	private double chargingCurrent;
+
+	public double getChargingCurrent() {
+		return chargingCurrent;
+	}
+
+	public boolean isCharging() {
+		return charging;
+	}
+
+	public void setCharging(boolean charging) {
+		this.charging = charging;
+	}
+
+	public double getBatteryVoltage() {
+		return batteryVoltage;
+	}
+
+	public void setBatteryVoltage(double batteryVoltage) {
+		this.batteryVoltage = batteryVoltage;
+	}
+
+	public double getMaxChargingCurrent() {
+		return maxChargingCurrent;
+	}
+
+	public void setMaxChargingCurrent(double maxChargingCurrent) {
+		this.maxChargingCurrent = maxChargingCurrent;
+	}
+
+	public boolean isResPowered() {
+		return resPowered;
+	}
+
+	public void setResPowered(boolean resPowered) {
+		this.resPowered = resPowered;
+	}
+
+	public double getPeakSolarPower() {
+		return peakSolarPower;
+	}
+
+	public void setPeakSolarPower(double peakSolarPower) {
+		this.peakSolarPower = peakSolarPower;
+	}
+
 	public double getMaxCapacity() {
 		return maxCapacity;
 	}
@@ -56,7 +107,17 @@ public class Battery {
 	public void setCurrentCapacity(double currentCapacity) {
 		this.currentCapacity = currentCapacity;
 	}
-	
+
+	public void chargeBattery(double energyTransfer, double current){
+		currentCapacity += energyTransfer;
+		if (currentCapacity > maxCapacity){
+			currentCapacity = maxCapacity;
+			chargingCurrent = 0;
+		} else {
+			chargingCurrent = current;
+		}
+	}
+
 	public double getBatteryTotalConsumption(){
 		if(this.currentCapacity < 0){
 			this.currentCapacity = 0;

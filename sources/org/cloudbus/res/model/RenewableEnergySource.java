@@ -32,6 +32,7 @@ public abstract class RenewableEnergySource {
     private EnergySourceType energySourceType;
     @JsonIgnore
     private EnergyData energyData;
+    private int peakPower;
 
     // change input depends on energy data implementations
     double getCurrentPower(long timestamp) {

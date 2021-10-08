@@ -50,6 +50,8 @@ public abstract class IoTDevice extends SimEntity {
 	private double bw;
 	private double usedBw;
 
+	String associatedEdge;
+
 	private OsmosisRoutingTable routingTable = new OsmosisRoutingTable();
 	private DeviceAgent osmoticDeviceAgent;
 
@@ -68,6 +70,14 @@ public abstract class IoTDevice extends SimEntity {
 	
 	@Override
 	public void startEntity() {		
+	}
+
+	public String getAssociatedEdge() {
+		return associatedEdge;
+	}
+
+	public void setAssociatedEdge(String associatedEdge) {
+		this.associatedEdge = associatedEdge;
 	}
 
 	@Override

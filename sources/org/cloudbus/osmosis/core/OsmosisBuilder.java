@@ -64,7 +64,7 @@ import java.util.*;
 
 /**
  * 
- * @author Khaled Alwasel
+ * @author Khaled Alwasel, Tomasz Szydlo
  * @contact kalwasel@gmail.com
  * @since IoTSim-Osmosis 1.0
  * 
@@ -404,7 +404,7 @@ public class OsmosisBuilder {
 			datacenter.getVmAllocationPolicy().setUpVmTopology(hostList);
 			datacenter.getSdnController().addVmsToSDNhosts(MELList);
 			
-			List<IoTDevice> devices = createIoTDevice(edgeDCEntity.getIoTDevices());
+			List<IoTDevice> devices = createIoTDevice(edgeDCEntity.getIoTDevices(), edgeDCEntity.getName());
 			this.broker.setIoTDevices(devices);
 			edgeDC.add(datacenter);
     	}		
@@ -457,7 +457,7 @@ public class OsmosisBuilder {
 		return vms;
 	}
 		
-	private List<IoTDevice> createIoTDevice(List<IotDeviceEntity>  iotDeviceEntity) {
+	private List<IoTDevice> createIoTDevice(List<IotDeviceEntity>  iotDeviceEntity, String associatedEdge) {
 		List<IoTDevice> devices = new ArrayList<>();
 		for(IotDeviceEntity iotDevice : iotDeviceEntity){
 			String ioTClassName = iotDevice.getIoTClassName();
@@ -476,8 +476,15 @@ public class OsmosisBuilder {
 					newInstance.getBattery().setMaxCapacity(iotDevice.getMax_battery_capacity());
 					newInstance.getBattery().setCurrentCapacity(iotDevice.getMax_battery_capacity());
 					newInstance.getBattery().setBatterySensingRate(iotDevice.getBattery_sensing_rate());
-					newInstance.getBattery().setBatterySendingRate(iotDevice.getBattery_sending_rate());;
-					
+					newInstance.getBattery().setBatterySendingRate(iotDevice.getBattery_sending_rate());
+
+					newInstance.setAssociatedEdge(associatedEdge);
+					newInstance.getBattery().setResPowered(iotDevice.isRes_powered());
+					newInstance.getBattery().setPeakSolarPower(iotDevice.getSolar_peak_power());
+					newInstance.getBattery().setBatteryVoltage(iotDevice.getBattery_voltage());
+
+					newInstance.getBattery().setMaxChargingCurrent(iotDevice.getMax_charging_current());
+
 					Mobility location = new Mobility(iotDevice.getMobilityEntity().getLocation());
 					location.movable = iotDevice.getMobilityEntity().isMovable();
 					if (iotDevice.getMobilityEntity().isMovable()) {

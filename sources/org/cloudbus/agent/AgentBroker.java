@@ -42,6 +42,56 @@ public class AgentBroker {
         }
     }
 
+    private double lastBatteryUpdate=-1;
+    private double batteryDeltaTime;
+
+
+    private void updateDeviceBatteries(double clock){
+        if (lastBatteryUpdate < 0){
+            lastBatteryUpdate = clock;
+            return;
+        } else {
+            //battery delta time is in seconds
+            batteryDeltaTime = clock-lastBatteryUpdate;
+            lastBatteryUpdate = clock;
+        }
+
+        for(DeviceAgent devAgent:agentsDevices.values()){
+            IoTDevice iotDevice = devAgent.getIoTDevice();
+            if (iotDevice.getBattery().isResPowered()){
+
+                String associatedEdge = devAgent.getIoTDevice().getAssociatedEdge();
+                EnergyController ec = energyControllers.get(associatedEdge);
+                double actualPowerEdge = ec.getRESCurrentPower();
+                double maxPowerEdge = ec.getRESMaximumPower();
+                double batteryPeakSolar = iotDevice.getBattery().getPeakSolarPower();
+                double batteryVoltage = devAgent.getIoTDevice().getBattery().getBatteryVoltage();
+
+                double max_charging_current = devAgent.getIoTDevice().getBattery().getMaxChargingCurrent();
+
+                double actualBatteryPower = actualPowerEdge * batteryPeakSolar / maxPowerEdge*1000;
+
+                double current = actualBatteryPower / batteryVoltage * 1000.0;
+
+                if (current>max_charging_current){
+                    current = max_charging_current;
+                }
+
+                double mah = batteryDeltaTime/3600.0 * current;
+
+                //charging is in mAh
+                iotDevice.getBattery().chargeBattery(mah, current);
+
+                if (mah>0.0){
+                    iotDevice.getBattery().setCharging(true);
+                } else {
+                    iotDevice.getBattery().setCharging(false);
+                }
+
+            }
+        }
+    }
+
     public void setSimulationStartTime(String time_s){
         simulationStartTime = LocalDateTime.parse(time_s, AppConfig.FORMATTER);
         simulationCurrentTime = simulationStartTime;
@@ -52,6 +102,7 @@ public class AgentBroker {
         if (!agentsAvailable) return;
         simulationCurrentTime = simulationStartTime.plusNanos((long) (clock*1000000000));
         updateEnergyControllersTime();
+        updateDeviceBatteries(clock);
     }
 
     public void setDcAgentClass(Class dcAgentClass) {
