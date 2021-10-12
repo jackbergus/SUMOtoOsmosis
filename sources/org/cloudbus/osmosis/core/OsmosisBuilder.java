@@ -474,7 +474,12 @@ public class OsmosisBuilder {
 	
 					IoTDevice newInstance = (IoTDevice) constructor.newInstance(networkModel, iotDevice.getName(), iotDevice.getBw());		
 					newInstance.getBattery().setMaxCapacity(iotDevice.getMax_battery_capacity());
-					newInstance.getBattery().setCurrentCapacity(iotDevice.getMax_battery_capacity());
+
+					if (iotDevice.getInitial_battery_capacity()==0.0){
+						newInstance.getBattery().setCurrentCapacity(iotDevice.getMax_battery_capacity());
+					} else {
+						newInstance.getBattery().setCurrentCapacity(iotDevice.getInitial_battery_capacity());
+					}
 					newInstance.getBattery().setBatterySensingRate(iotDevice.getBattery_sensing_rate());
 					newInstance.getBattery().setBatterySendingRate(iotDevice.getBattery_sending_rate());
 
