@@ -113,6 +113,7 @@ public class Battery {
 		if (currentCapacity > maxCapacity){
 			currentCapacity = maxCapacity;
 			chargingCurrent = 0;
+			//chargingCurrent = current;
 		} else {
 			chargingCurrent = current;
 		}

@@ -165,13 +165,13 @@
 			  {
 				"name":"temperature_1",
 				"bw":100,				
-				"max_battery_capacity":2000.0,
-				"battery_sensing_rate":1.0,
-				"battery_sending_rate":1.0,
+				"max_battery_capacity":3000.0,
+				"battery_sensing_rate":1.8,
+				"battery_sending_rate":1.8,
 				"res_powered": true,
-				"solar_peak_power":3.0,
+				"solar_peak_power":10.0,
 				"battery_voltage": 3.7,
-				"max_charging_current": 250.0,
+				"max_charging_current": 500.0,
 				"ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",		
 				 "mobilityEntity":{
 					"movable":false,

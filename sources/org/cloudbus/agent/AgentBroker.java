@@ -69,7 +69,7 @@ public class AgentBroker {
 
                 double max_charging_current = devAgent.getIoTDevice().getBattery().getMaxChargingCurrent();
 
-                double actualBatteryPower = actualPowerEdge * batteryPeakSolar / maxPowerEdge*1000;
+                double actualBatteryPower = actualPowerEdge * batteryPeakSolar / maxPowerEdge /1000.0;
 
                 double current = actualBatteryPower / batteryVoltage * 1000.0;
 
