@@ -27,8 +27,9 @@ public class RES_example7_DeviceAgent extends DeviceAgent {
         double capacity = getIoTDevice().getBattery().getCurrentCapacity();
 
         if (getIoTDevice().getBattery().isResPowered()){
-            //System.out.println("["+getIoTDevice().getName() + "]Battery capacity:"+(int) capacity + "mAh\t Charging:" + getIoTDevice().getBattery().isCharging() +"\t Charging current:"+(int)getIoTDevice().getBattery().getChargingCurrent()+"mA");
-            System.out.println((int) capacity);
+            System.out.println("["+getIoTDevice().getName() + "]Battery capacity:"+(int) capacity + "mAh\t Charging:" + getIoTDevice().getBattery().isCharging() +"\t Charging current:"+(int)getIoTDevice().getBattery().getChargingCurrent()+"mA");
+            //System.out.println((int) capacity);
+            //System.out.println((int) getIoTDevice().getBattery().get);
         }
 
     }

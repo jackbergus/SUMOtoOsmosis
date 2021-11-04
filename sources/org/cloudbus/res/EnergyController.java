@@ -5,7 +5,6 @@ import org.cloudbus.res.model.PowerGrid;
 import org.cloudbus.res.model.RenewableEnergySource;
 import org.cloudbus.res.model.datacenter.Datacenter;
 import org.cloudbus.res.model.storage.EnergyStorage;
-import org.cloudbus.res.policies.EnergyManagementPolicy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,17 +15,17 @@ import java.util.List;
  */
 @Data
 public class EnergyController {
-    private String edgeDatacenterId;
-    private List<RenewableEnergySource> energySources;
-    private List<EnergyStorage> energyStorages;
-    private List<PowerGrid> powerGrids;
-    private EnergyManagementPolicy policy;
-    private Double utilization;
+    protected String edgeDatacenterId;
+    protected List<RenewableEnergySource> energySources;
+    protected List<EnergyStorage> energyStorages;
+    protected List<PowerGrid> powerGrids;
+    protected EnergyManagementPolicy policy;
+    protected Double utilization;
 
-    private LocalDateTime simulationCurrentTime;
+    protected LocalDateTime simulationCurrentTime;
 
     public static EnergyController fromDatacenter(Datacenter datacenter) {
-        return new EnergyController(
+        EnergyController ec = new EnergyController(
                 datacenter.getName(),
                 datacenter.getEnergySources(),
                 datacenter.getEnergyStorage(),
@@ -34,6 +33,8 @@ public class EnergyController {
                 datacenter.getEnergyManagementPolicy(),
                 datacenter.getUtilization()
         );
+
+        return ec;
     }
 
     private EnergyController(String edgeDatacenterId, List<RenewableEnergySource> energySources, List<EnergyStorage> energyStorages, List<PowerGrid> powerGrids, EnergyManagementPolicy policy, double utilization) {
@@ -50,34 +51,22 @@ public class EnergyController {
     }
 
     public double getRESCurrentPower(long timestamp) {
-        double power=0.0;
-        for(RenewableEnergySource source:energySources){
-            power += source.getEnergyData().getCurrentPower(timestamp);
-        }
-        return power;
+        policy.setEnergyController(this);
+        return policy.getRESCurrentPower(timestamp);
     }
 
     public double getRESCurrentPower(LocalDateTime time) {
-        double power=0.0;
-        for(RenewableEnergySource source:energySources){
-            power += source.getEnergyData().getCurrentPower(time);
-        }
-        return power;
+        policy.setEnergyController(this);
+        return policy.getRESCurrentPower(time);
     }
 
     public double getRESCurrentPower() {
-        double power=0.0;
-        for(RenewableEnergySource source:energySources){
-            power += source.getEnergyData().getCurrentPower(simulationCurrentTime);
-        }
-        return power;
+        policy.setEnergyController(this);
+        return policy.getRESCurrentPower();
     }
 
     public double getRESMaximumPower(){
-        double power=0.0;
-        for(RenewableEnergySource source:energySources){
-            power += source.getPeakPower();
-        }
-        return power;
-    }
+        policy.setEnergyController(this);
+        return policy.getRESMaximumPower();
+     }
 }

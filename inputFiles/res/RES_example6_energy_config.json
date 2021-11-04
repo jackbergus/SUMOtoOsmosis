@@ -5,7 +5,7 @@
       "name": "Edge_M_1",
       "type": "edge",
       "energyManagementPolicy": {
-        "className": "ExportLimitEnergyManagementPolicy"
+        "className": "OnGridPolicy"
       },
       "utilization" : "50",
       "energyStorage": [
@@ -44,7 +44,7 @@
       "name": "Edge_M_2",
       "type": "edge",
       "energyManagementPolicy": {
-        "className": "ExportLimitEnergyManagementPolicy"
+        "className": "OnGridPolicy"
       },
       "utilization" : "50",
       "energyStorage": [
@@ -57,7 +57,6 @@
       "powerGrid": [
         {
           "country": "France",
-          "priceForEnergy": "0.5",
           "priceForEnergy": "0.133",
           "emissionCO2": "38",
           "lowEmission": "97",
@@ -86,7 +85,7 @@
       "name": "Cloud_M_1",
       "type": "cloud",
       "energyManagementPolicy": {
-        "className": "ExportLimitWithEnergyStoragePolicy"
+        "className": "OnGridPolicy"
       },
       "utilization" : "30",
       "energyStorage": [

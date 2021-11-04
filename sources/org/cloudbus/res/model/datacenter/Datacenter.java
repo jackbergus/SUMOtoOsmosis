@@ -7,7 +7,7 @@ import org.cloudbus.res.config.AppConfig;
 import org.cloudbus.res.model.PowerGrid;
 import org.cloudbus.res.model.RenewableEnergySource;
 import org.cloudbus.res.model.storage.EnergyStorage;
-import org.cloudbus.res.policies.EnergyManagementPolicy;
+import org.cloudbus.res.EnergyManagementPolicy;
 
 import java.io.File;
 import java.io.IOException;
