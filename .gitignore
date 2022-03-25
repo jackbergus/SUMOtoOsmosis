@@ -5,3 +5,5 @@ osmosis_csv
 log.txt
 sumo_log.txt
 sumo_trace.xml
+target/
+target/*
