@@ -1,5 +1,5 @@
 experimentName: "Testing"
-sumo_configuration_file_path: "/home/giacomo/IdeaProjects/Converter/sumo/bologna/port_tutorials/port_cologne/osm.sumocfg"
+sumo_configuration_file_path: "sumo/bologna/port_tutorials/port_cologne/osm.sumocfg"
 sumo_program: "sumo"
 logger_file: "sumo_log.txt"
 begin: 0
@@ -23,7 +23,7 @@ datacenter_2: "Cloud_1"
 OsmesisCloudlet_MI: 200
 OsmosisOutput: "osmosis_csv"
 OsmosisConfFiles: "osmosis_confs"
-default_json_conf_file: "/home/giacomo/IdeaProjects/Converter/inputFiles/Example1_configuration.json"
+default_json_conf_file: "inputFiles/Example1_configuration.json"
 VM_pes : 2
 VM_mips : 250
 VM_ram : 512
