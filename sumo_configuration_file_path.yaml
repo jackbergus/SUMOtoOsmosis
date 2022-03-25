@@ -1,0 +1,32 @@
+experimentName: "Testing"
+sumo_configuration_file_path: "/home/giacomo/IdeaProjects/Converter/sumo/bologna/port_tutorials/port_cologne/osm.sumocfg"
+sumo_program: "sumo"
+logger_file: "sumo_log.txt"
+begin: 0
+end: 100
+trace_file: "sumo_trace.xml"
+maximum_tl_distance_in_meters: 5
+bw: 100
+max_battery_capacity: 100.0
+battery_sensing_rate: 0.001
+battery_sending_rate: 0.001
+network_type: "wifi"
+protocol: "xmpp"
+DataRate_Sec: 0.1
+StopDataGeneration_Sec: 1
+OsmesisIoTLet_MI: 50
+IoTDeviceOutputData_Mb: 90
+datacenter: "Edge_1"
+OsmesisEdgelet_MI: 250
+MELOutputData_Mb: 70
+datacenter_2: "Cloud_1"
+OsmesisCloudlet_MI: 200
+OsmosisOutput: "osmosis_csv"
+OsmosisConfFiles: "osmosis_confs"
+default_json_conf_file: "/home/giacomo/IdeaProjects/Converter/inputFiles/Example1_configuration.json"
+VM_pes : 2
+VM_mips : 250
+VM_ram : 512
+VM_storage : 10000
+VM_bw : 1000
+VM_cloudletPolicy: "TimeShared"

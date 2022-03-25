@@ -1,0 +1,7 @@
+osmosis_confs/
+osmosis_confs/*
+osmosis_csv/*
+osmosis_csv
+log.txt
+sumo_log.txt
+sumo_trace.xml

@@ -1,0 +1,6 @@
+[submodule "osmosis"]
+	path = osmosis
+	url = https://github.com/kalwasel/IoTSim-Osmosis
+[submodule "sumo/bologna"]
+	path = sumo/bologna
+	url = https://github.com/DLR-TS/sumo-scenarios/
