@@ -87,15 +87,18 @@ public class RunSimulator {
         bw.close();
     }
 
-    public void runOsmosis(double time, String json, String csv) throws Exception{
+    public long runOsmosis(ArrayList<CSVOsmosisAppFromTags.Record> x, double time, String json, String csv, long initTransact) throws Exception{
         OsmosisBuilder topologyBuilder;
         OsmesisBroker osmesisBroker;
         OsmesisAppsParser.appList.clear();
+        OsmesisBroker.workflowTag.clear();
         int num_user = 1; // number of users
         Calendar calendar = Calendar.getInstance();
         boolean trace_flag = false; // mean trace events
         // Initialize the CloudSim library
-        CloudSim.init(num_user, calendar, trace_flag);
+        CloudSim.init(num_user, calendar, false);
+        if (conf.terminate_simulation_at > 0)
+            CloudSim.terminateSimulation(conf.terminate_simulation_at);
         osmesisBroker  = new OsmesisBroker("OsmesisBroker");
         topologyBuilder = new OsmosisBuilder(osmesisBroker);
         ConfiguationEntity config = buildTopologyFromFile(json);
@@ -112,12 +115,16 @@ public class RunSimulator {
         maestro.setSdnControllers(controllers);
         osmesisBroker.submitOsmesisApps(OsmesisAppsParser.appList);
         osmesisBroker.setDatacenters(topologyBuilder.getOsmesisDatacentres());
-        double startTime = CloudSim.startSimulation();
+        CloudSim.startSimulation();
         LogUtil.simulationFinished();
-        CSVOsmosisAppFromTags.dump_current_conf(new File(conf.OsmosisOutput), conf.experimentName, time);
+        new File(csv).delete();
+        new File(json).delete();
+        return CSVOsmosisAppFromTags.dump_current_conf(x, new File(conf.OsmosisOutput), conf.experimentName, 1.0, time, initTransact);
     }
 
     public void dumpSumo() throws Exception {
+        long initTransact = 0;
+        ArrayList<CSVOsmosisAppFromTags.Record> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
         if (! folderOut.exists()){
@@ -218,9 +225,20 @@ public class RunSimulator {
                 fw.close();
                 File CSV_CONF_FILE = Paths.get(folderOut.getAbsolutePath(), confCURR+".csv").toFile();
                 CSVOsmosisRecord.WriteCsv(CSV_CONF_FILE, csvFile);
-                runOsmosis(currTime.doubleValue(), jsonFile.getAbsolutePath(), CSV_CONF_FILE.getAbsolutePath());
+                initTransact += runOsmosis(xyz, currTime.doubleValue(), jsonFile.getAbsolutePath(), CSV_CONF_FILE.getAbsolutePath(), initTransact);
             }
         }
+
+        FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+        bw.write(String.join(",", CSVOsmosisAppFromTags.headerApp));
+        bw.newLine();
+        for (var x : xyz) {
+            bw.write(String.join(",", x.toString()));
+            bw.newLine();
+        }
+        bw.close();
+        fos.close();
     }
 
     public void run() {

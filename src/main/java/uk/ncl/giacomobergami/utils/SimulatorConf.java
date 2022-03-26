@@ -53,6 +53,15 @@ public class SimulatorConf {
     public double VM_storage;
     public long VM_bw;
     public  String VM_cloudletPolicy;
+    public double terminate_simulation_at;
+
+    public double getTerminate_simulation_at() {
+        return terminate_simulation_at;
+    }
+
+    public void setTerminate_simulation_at(double terminate_simulation_at) {
+        this.terminate_simulation_at = terminate_simulation_at;
+    }
 
     public double getVM_mips() {
         return VM_mips;

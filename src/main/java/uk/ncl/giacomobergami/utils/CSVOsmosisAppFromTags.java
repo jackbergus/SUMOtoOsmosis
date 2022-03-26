@@ -21,20 +21,96 @@
 package uk.ncl.giacomobergami.utils;
 
 import com.google.common.collect.HashMultimap;
-import com.opencsv.CSVWriter;
 import org.cloudbus.cloudsim.edge.core.edge.EdgeLet;
 import org.cloudbus.osmosis.core.Flow;
 import org.cloudbus.osmosis.core.OsmesisBroker;
 import org.cloudbus.osmosis.core.WorkflowInfo;
 
 import java.io.*;
-import java.nio.file.Paths;
-import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class CSVOsmosisAppFromTags {
 
-    static String[] headerApp = new String[]{"App_ID"
+    public static class Record {
+        public int App_ID;
+        public String AppName;
+        public int Transaction;
+        public double StartTime, FinishTime;
+        public String IoTDeviceName, MELName;
+        public long DataSizeIoTDeviceToMEL_Mb;
+        public double TransmissionTimeIoTDeviceToMEL;
+        public double EdgeLetMISize, EdgeLet_MEL_StartTime, EdgeLet_MEL_FinishTime, EdgeLetProccessingTimeByMEL;
+        public String DestinationVmName;
+        public long DataSizeMELToVM_Mb;
+        public double TransmissionTimeMELToVM, CloudLetMISize, CloudLetProccessingTimeByVM, TransactionTotalTime;
+
+        @Override
+        public String toString() {
+            return App_ID +
+                    "," + AppName  +
+                    "," + Transaction +
+                    "," + StartTime +
+                    "," + FinishTime +
+                    "," + IoTDeviceName  +
+                    "," + MELName  +
+                    "," + DataSizeIoTDeviceToMEL_Mb +
+                    "," + TransmissionTimeIoTDeviceToMEL +
+                    "," + EdgeLetMISize +
+                    "," + EdgeLet_MEL_StartTime +
+                    "," + EdgeLet_MEL_FinishTime +
+                    "," + EdgeLetProccessingTimeByMEL +
+                    "," + DestinationVmName  +
+                    "," + DataSizeMELToVM_Mb +
+                    "," + TransmissionTimeMELToVM +
+                    "," + CloudLetMISize +
+                    "," + CloudLetProccessingTimeByVM +
+                    "," + TransactionTotalTime ;
+        }
+
+        public Record(WorkflowInfo workflowTag, double transactionTotalTime) {
+            Flow f = null;
+            int size = workflowTag.getOsmosisLetSize();
+            try {
+                f = workflowTag.getOsmosisFlow(1);
+            } catch (IndexOutOfBoundsException e) { }
+            App_ID = (workflowTag.getAppId());
+            AppName = workflowTag.getAppName();
+            Transaction = (workflowTag.getWorkflowId());
+            StartTime = workflowTag.getSartTime();
+            FinishTime = workflowTag.getFinishTime();
+            IoTDeviceName = workflowTag.getOsmosisFlow(0).getAppNameSrc();
+            MELName = workflowTag.getOsmosisFlow(0).getAppNameDest() + " (" +workflowTag.getDCName(0) + ")";
+            DataSizeIoTDeviceToMEL_Mb = workflowTag.getOsmosisFlow(0).getSize();
+            TransmissionTimeIoTDeviceToMEL = workflowTag.getOsmosisFlow(0).getTransmissionTime();
+            EdgeLetMISize = workflowTag.getOsmosislet(0).getCloudletLength();
+            EdgeLet_MEL_StartTime = workflowTag.getOsmosislet(0).getExecStartTime();
+            EdgeLet_MEL_FinishTime = workflowTag.getOsmosislet(0).getFinishTime();
+            EdgeLetProccessingTimeByMEL = workflowTag.getOsmosislet(0).getActualCPUTime();
+            DestinationVmName = f.getAppNameDest() + " (" +workflowTag.getDCName(1) + ")";
+            DataSizeMELToVM_Mb = f.getSize();
+            TransmissionTimeMELToVM = f.getTransmissionTime();
+            CloudLetMISize = workflowTag.getOsmosislet(1).getCloudletLength();
+            CloudLetProccessingTimeByVM = workflowTag.getOsmosislet(1).getActualCPUTime();
+            TransactionTotalTime = transactionTotalTime;
+        }
+
+        void normalize(double max, double min, double newMax, double offset, long initTransact) {
+            Transaction += initTransact;
+            StartTime = offset+(StartTime - min)/(max-min) * newMax;
+            FinishTime = offset+(FinishTime - min)/(max-min) * newMax;
+            TransmissionTimeIoTDeviceToMEL = (TransmissionTimeIoTDeviceToMEL - min)/(max-min) * newMax;
+            EdgeLet_MEL_StartTime = offset+(EdgeLet_MEL_StartTime-min)/(max-min) * newMax;
+            EdgeLet_MEL_FinishTime = offset+(EdgeLet_MEL_FinishTime-min)/(max-min) * newMax;
+            EdgeLetProccessingTimeByMEL = (EdgeLetProccessingTimeByMEL-min)/(max-min) * newMax;
+            TransmissionTimeMELToVM = (TransmissionTimeMELToVM-min)/(max-min) * newMax;
+            CloudLetProccessingTimeByVM = (CloudLetProccessingTimeByVM-min)/(max-min) * newMax;
+            TransactionTotalTime = (TransactionTotalTime-min)/(max-min) * newMax;
+        }
+    }
+
+    public static String[] headerApp = new String[]{"App_ID"
             ,"AppName"
             ,"Transaction"
             ,"StartTime"
@@ -55,7 +131,7 @@ public class CSVOsmosisAppFromTags {
             , "TransactionTotalTime"};
 
 
-    public static void dump_current_conf(File parent, String prefix, double current_time) throws IOException {
+    public static long dump_current_conf(ArrayList<Record> xyz, File parent, String prefix, double max_time, double offset, long initTransact) throws IOException {
         if (! parent.exists()){
             parent.mkdirs();
         } else if (parent.isFile())  {
@@ -66,26 +142,39 @@ public class CSVOsmosisAppFromTags {
         for(WorkflowInfo workflowTag : OsmesisBroker.workflowTag){
             map.put(workflowTag.getAppId(), workflowTag);
         }
-        File file = Paths.get(parent.getAbsolutePath(), prefix+"t"+current_time+".csv").toFile();
-        FileOutputStream fos = new FileOutputStream(file);
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-        bw.write(String.join(",", headerApp));
-        bw.newLine();
+        ArrayList<Record> ls = new ArrayList<>();
         for(var x : map.asMap().entrySet()){
-            printOsmesisApp(bw, x.getValue());
+            printOsmesisApp(ls, x.getValue());
         }
-        bw.close();
-        fos.close();
+        double max = ls.stream().map(x -> x.FinishTime).max(Double::compare).get();
+        for (var x : ls)
+            x.normalize(max, 0, max_time, offset, initTransact);
+        ls.sort((o1, o2) -> {
+            int val = Double.compare(o1.StartTime, o2.StartTime);
+            if (val == 0) {
+                val = Double.compare(o1.FinishTime, o2.FinishTime);
+                if (val == 0) {
+                    val = o1.IoTDeviceName.compareTo(o2.IoTDeviceName);
+                    if (val == 0) {
+                        return o1.DestinationVmName.compareTo(o2.DestinationVmName);
+                    } else
+                        return val;
+                } else
+                    return val;
+            } else
+                return val;
+        });
+        xyz.addAll(ls);
+        return (long)ls.size();
     }
 
-    public static void printOsmesisApp(BufferedWriter bw, Collection<WorkflowInfo> tags) throws IOException {
+    public static void printOsmesisApp(List<Record> bw, Collection<WorkflowInfo> tags) throws IOException {
         double transactionTransmissionTime = 0;
         double transactionOsmosisLetTime = 0;
         double transactionTotalTime;
         for (var workflowTag : tags) {
             transactionTransmissionTime = 0;
             transactionOsmosisLetTime = 0;
-            transactionTotalTime = 0;
             for(int i = 0; i < workflowTag.getFlowLists().size(); i++){
                 Flow flow = workflowTag.getOsmosisFlow(i);
                 transactionTransmissionTime += flow.getTransmissionTime();
@@ -95,27 +184,8 @@ public class CSVOsmosisAppFromTags {
                 EdgeLet let = workflowTag.getOsmosislet(x);
                 transactionOsmosisLetTime += let.getActualCPUTime();
             }
-            transactionTotalTime = transactionTransmissionTime +  transactionOsmosisLetTime;
-            bw.write(String.join(",", new String[]{String.valueOf(workflowTag.getAppId())
-                    , workflowTag.getAppName()
-                    , String.valueOf(workflowTag.getWorkflowId())
-                    , new DecimalFormat("0.00000").format(workflowTag.getSartTime())
-                    , new DecimalFormat("0.00000").format(workflowTag.getFinishTime())
-                    , workflowTag.getOsmosisFlow(0).getAppNameSrc()
-                    , workflowTag.getOsmosisFlow(0).getAppNameDest() + " (" +workflowTag.getDCName(0) + ")"
-                    , String.valueOf(workflowTag.getOsmosisFlow(0).getSize())
-                    , new DecimalFormat("0.00000").format(workflowTag.getOsmosisFlow(0).getTransmissionTime())
-                    , String.valueOf(workflowTag.getOsmosislet(0).getCloudletLength())
-                    , new DecimalFormat("0.00000").format(workflowTag.getOsmosislet(0).getExecStartTime())
-                    , new DecimalFormat("0.00000").format(workflowTag.getOsmosislet(0).getFinishTime())
-                    , new DecimalFormat("0.00000").format(workflowTag.getOsmosislet(0).getActualCPUTime())
-                    , workflowTag.getOsmosisFlow(1).getAppNameDest() + " (" +workflowTag.getDCName(1) + ")"
-                    , String.valueOf(workflowTag.getOsmosisFlow(1).getSize())
-                    , new DecimalFormat("0.00000").format(workflowTag.getOsmosisFlow(1).getTransmissionTime())
-                    , String.valueOf(workflowTag.getOsmosislet(1).getCloudletLength())
-                    , new DecimalFormat("0.00000").format(workflowTag.getOsmosislet(1).getActualCPUTime())
-                    , new DecimalFormat("0.00000").format(transactionTotalTime)}));
-            bw.newLine();
+
+            bw.add(new Record(workflowTag, transactionTransmissionTime +  transactionOsmosisLetTime));
         }
     }
 
