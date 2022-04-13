@@ -101,4 +101,4 @@ After successfully fetching data, script creates a new json file for each data c
 
 # Publications
 
-*Tomasz Szydlo, Amadeusz Szabala, Nazar Kordiumov, Konrad Siuzdak, Lukasz Wolski, Khaled Alwasel, Fawzy Habeeb, Rajiv Ranjan, "IoTSim-Osmosis-RES: Towards autonomic renewableenergy-aware osmotic computing", submitted*
+*Tomasz Szydlo, Amadeusz Szabala, Nazar Kordiumov, Konrad Siuzdak, Lukasz Wolski, Khaled Alwasel, Fawzy Habeeb, Rajiv Ranjan, "IoTSim-Osmosis-RES: Towards autonomic renewableenergy-aware osmotic computing", accepted, https://doi.org/10.1002/spe.3084*
