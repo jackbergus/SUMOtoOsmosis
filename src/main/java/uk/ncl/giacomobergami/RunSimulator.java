@@ -44,11 +44,13 @@ import uk.ncl.giacomobergami.utils.XPathUtil;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 public class RunSimulator {
 
@@ -122,6 +124,21 @@ public class RunSimulator {
         return CSVOsmosisAppFromTags.dump_current_conf(x, new File(conf.OsmosisOutput), conf.experimentName, 1.0, time, initTransact);
     }
 
+    public static void decompressGzip(Path source, Path target) throws IOException {
+        try (GZIPInputStream gis = new GZIPInputStream(
+                new FileInputStream(source.toFile()));
+             FileOutputStream fos = new FileOutputStream(target.toFile())) {
+
+            // copy GZIPInputStream to FileOutputStream
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = gis.read(buffer)) > 0) {
+                fos.write(buffer, 0, len);
+            }
+
+        }
+    }
+
     public void dumpSumo() throws Exception {
         long initTransact = 0;
         ArrayList<CSVOsmosisAppFromTags.Record> xyz = new ArrayList<>();
@@ -141,6 +158,11 @@ public class RunSimulator {
         if (!simulationXML.exists()) {
             System.err.println("ERR: file " + simulationXML.getAbsolutePath() + " from " + file.getAbsolutePath() + " does not exists!");
             System.exit(1);
+        } else if (simulationXML.getAbsolutePath().endsWith(".gz")) {
+            String ap = simulationXML.getAbsolutePath();
+            ap = ap.substring(0, ap.lastIndexOf('.'));
+            decompressGzip(simulationXML.toPath(), new File(ap).toPath());
+            simulationXML = new File(ap);
         }
         System.out.println("Loading the traffic light information...");
         Document networkFile = db.parse(simulationXML);
