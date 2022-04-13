@@ -214,6 +214,7 @@ public class RunSimulator {
                     vehs.add(rec);
                 }
             }
+            if (vehs.isEmpty()) continue;
             var tree = new VPTree<>(f, vehs);
             List<ConfiguationEntity.IotDeviceEntity> allDevices = new ArrayList<>();
             List<ConfiguationEntity.VMEntity> allDestinations = new ArrayList<>();
