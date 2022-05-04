@@ -46,20 +46,19 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 public class RunSimulator {
 
+    private boolean hasRun;
     private final SimulatorConf conf;
     private final DocumentBuilderFactory dbf;
     private final DocumentBuilder db;
     private final String aMel;
     private ConfiguationEntity canvas;
     private final Gson gson;
+    private final SortedMap<Double, HashMap<String, Double>> time_to_consumption;
 
     private void runSumo() throws IOException {
         if (new File(conf.trace_file).exists()) {
@@ -89,7 +88,7 @@ public class RunSimulator {
         bw.close();
     }
 
-    public long runOsmosis(ArrayList<CSVOsmosisAppFromTags.Record> x, double time, String json, String csv, long initTransact) throws Exception{
+    public long runOsmosis(ArrayList<CSVOsmosisAppFromTags.TransactionRecord> x, double time, String json, String csv, long initTransact) throws Exception{
         OsmosisBuilder topologyBuilder;
         OsmesisBroker osmesisBroker;
         OsmesisAppsParser.appList.clear();
@@ -121,7 +120,7 @@ public class RunSimulator {
         LogUtil.simulationFinished();
         new File(csv).delete();
         new File(json).delete();
-        return CSVOsmosisAppFromTags.dump_current_conf(x, new File(conf.OsmosisOutput), conf.experimentName, 1.0, time, initTransact);
+        return CSVOsmosisAppFromTags.dump_current_conf(x, new File(conf.OsmosisOutput), conf.experimentName, 1.0, time, initTransact, time_to_consumption);
     }
 
     public static void decompressGzip(Path source, Path target) throws IOException {
@@ -141,7 +140,7 @@ public class RunSimulator {
 
     public void dumpSumo() throws Exception {
         long initTransact = 0;
-        ArrayList<CSVOsmosisAppFromTags.Record> xyz = new ArrayList<>();
+        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
         if (! folderOut.exists()){
@@ -222,7 +221,6 @@ public class RunSimulator {
             for (int j = 0, M = ls.size(); j < M; j++) {
                 TrafficLightInformation x = ls.get(j);
                 var distanceQueryResult = tree.getAllWithinDistance(x, distanceSquared);
-                List<ConfiguationEntity.IotDeviceEntity> iotDev = new ArrayList<>(distanceQueryResult.size());
                 if (!distanceQueryResult.isEmpty()) {
                     hasSomeResult = true;
                     for (var veh : distanceQueryResult) {
@@ -262,14 +260,31 @@ public class RunSimulator {
         }
         bw.close();
         fos.close();
+
+        FileOutputStream batt = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_batt.csv").toFile());
+        BufferedWriter b2 = new BufferedWriter(new OutputStreamWriter(batt));
+        b2.write("Time,Sem,BatteryConsumption");
+        b2.newLine();
+        for (var x : time_to_consumption.entrySet()) {
+            var t = x.getKey();
+            for (var y : x.getValue().entrySet()) {
+                b2.write(t+","+y.getKey()+","+y.getValue());
+                b2.newLine();
+            }
+        }
+        b2.close();
+        batt.close();
     }
 
     public void run() {
-        try {
-            runSumo();
-            dumpSumo();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!hasRun) {
+            try {
+                runSumo();
+                dumpSumo();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            hasRun = true;
         }
     }
 
@@ -295,6 +310,8 @@ public class RunSimulator {
             System.exit(1);
         }
         aMel = canvas.getEdgeDatacenter().get(0).getMELEntities().get(0).getName();
+        time_to_consumption = new TreeMap<>();
+        hasRun = false;
     }
 
     public static void main(String[] args) throws Exception {

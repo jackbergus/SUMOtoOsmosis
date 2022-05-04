@@ -13,7 +13,7 @@ end: 2000
 # Output of sumo's simulation (--fcd-output)
 trace_file: "sumo_trace.xml"
 # Considering vehicles within this distance from the semaphore
-maximum_tl_distance_in_meters: 5
+maximum_tl_distance_in_meters: 20
 # Veh's information
 bw: 100
 max_battery_capacity: 100.0

@@ -23,17 +23,16 @@ package uk.ncl.giacomobergami.utils;
 import com.google.common.collect.HashMultimap;
 import org.cloudbus.cloudsim.edge.core.edge.EdgeLet;
 import org.cloudbus.osmosis.core.Flow;
+import org.cloudbus.osmosis.core.OsmesisAppsParser;
 import org.cloudbus.osmosis.core.OsmesisBroker;
 import org.cloudbus.osmosis.core.WorkflowInfo;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class CSVOsmosisAppFromTags {
 
-    public static class Record {
+    public static class TransactionRecord {
         public int App_ID;
         public String AppName;
         public int Transaction;
@@ -69,7 +68,7 @@ public class CSVOsmosisAppFromTags {
                     "," + TransactionTotalTime ;
         }
 
-        public Record(WorkflowInfo workflowTag, double transactionTotalTime) {
+        public TransactionRecord(WorkflowInfo workflowTag, double transactionTotalTime) {
             Flow f = null;
             int size = workflowTag.getOsmosisLetSize();
             try {
@@ -130,8 +129,25 @@ public class CSVOsmosisAppFromTags {
             ,"CloudLetProccessingTimeByVM"
             , "TransactionTotalTime"};
 
+    public static HashMap<String, Double> increaseConsumptionByTime(Map<String, Double> prev, Map<String, Double> consumptions) {
+        HashMap<String, Double> m = new HashMap<>(prev);
+        consumptions.forEach((k,v) -> m.compute(k, (a, b) -> b == null ? v : b+v));
+        return m;
+    }
 
-    public static long dump_current_conf(ArrayList<Record> xyz, File parent, String prefix, double max_time, double offset, long initTransact) throws IOException {
+
+    public static long dump_current_conf(ArrayList<TransactionRecord> xyz, File parent, String prefix, double max_time, double offset, long initTransact, SortedMap<Double, HashMap<String, Double>> time_to_consumption) throws IOException {
+        HashMap<String, Double> consumptionMap = new HashMap<>();
+        for (var x : OsmesisAppsParser.appList) {
+            consumptionMap.put(x.getAppName(), x.getIoTDeviceBatteryConsumption());
+        }
+        if (time_to_consumption.isEmpty()) {
+            time_to_consumption.put(offset, consumptionMap);
+        } else {
+            var prev = time_to_consumption.get(time_to_consumption.lastKey());
+            time_to_consumption.put(offset, increaseConsumptionByTime(prev, consumptionMap));
+        }
+
         if (! parent.exists()){
             parent.mkdirs();
         } else if (parent.isFile())  {
@@ -142,7 +158,7 @@ public class CSVOsmosisAppFromTags {
         for(WorkflowInfo workflowTag : OsmesisBroker.workflowTag){
             map.put(workflowTag.getAppId(), workflowTag);
         }
-        ArrayList<Record> ls = new ArrayList<>();
+        ArrayList<TransactionRecord> ls = new ArrayList<>();
         for(var x : map.asMap().entrySet()){
             printOsmesisApp(ls, x.getValue());
         }
@@ -168,10 +184,9 @@ public class CSVOsmosisAppFromTags {
         return (long)ls.size();
     }
 
-    public static void printOsmesisApp(List<Record> bw, Collection<WorkflowInfo> tags) throws IOException {
+    public static void printOsmesisApp(List<TransactionRecord> bw, Collection<WorkflowInfo> tags) {
         double transactionTransmissionTime = 0;
         double transactionOsmosisLetTime = 0;
-        double transactionTotalTime;
         for (var workflowTag : tags) {
             transactionTransmissionTime = 0;
             transactionOsmosisLetTime = 0;
@@ -185,7 +200,7 @@ public class CSVOsmosisAppFromTags {
                 transactionOsmosisLetTime += let.getActualCPUTime();
             }
 
-            bw.add(new Record(workflowTag, transactionTransmissionTime +  transactionOsmosisLetTime));
+            bw.add(new TransactionRecord(workflowTag, transactionTransmissionTime +  transactionOsmosisLetTime));
         }
     }
 
