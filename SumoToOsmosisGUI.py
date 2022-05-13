@@ -11,6 +11,7 @@ import yaml
 from pathlib import Path
 import xml.etree.ElementTree as et
 import sys
+import csv
 
 widgets=[
     ' [', progressbar.Timer(), '] ',
@@ -18,17 +19,24 @@ widgets=[
     ' (', progressbar.ETA(), ') ',
 ]
 
+
+
 def rgb_to_255(t):
     return tuple([int(t[0] * 255), int(t[1]*255), int(t[2]*255)])
 
 def generate_palette(N):
     return map(lambda x: '#%02x%02x%02x' % rgb_to_255(x), sns.color_palette(n_colors=N))
 
-class SumoToOsmosisGUI(object):
-    def __init__(self, network, trajectory, intersection_file):
-        semaphores = set()
-        self.network = network
+class Point(object):
+    def __init__(self, x = 0, y = 0, col = '#%02x%02x%02x' % rgb_to_255(tuple([0,0,0]))):
+        self.x = x
+        self.y = y
+        self.col = col
 
+class SumoToOsmosisGUI(object):
+    def __init__(self, network, trajectory, intersection_file, sem_pos):
+        self.semaphores = dict()
+        self.network = network
         self.trajectories = SumoNetVis.Trajectories()
         self.trajectories.read_from_fcd(trajectory)
 
@@ -40,16 +48,28 @@ class SumoToOsmosisGUI(object):
                 trajScanMap[veh.id][time] = idx
                 idx = idx + 1
 
-        semaphores.add("")
+        self.semaphores[""] = Point()
         intersections = dict()
         with open(intersection_file) as f:
             intersections = json.load(f)
             for time in intersections:
                 for sem in intersections[time]:
                     intersections[time][sem] = set(intersections[time][sem])
-                    semaphores.add(sem)
-        sem_to_col = dict(zip(semaphores, generate_palette(len(semaphores))))
-        semaphores.clear()
+                    self.semaphores[sem] = Point(0,0)
+
+        self.semx = list()
+        self.semy = list()
+        self.semcol = list()
+        with open(sem_pos, mode='r') as csv_file_sem:
+            csv_reader = list(csv.DictReader(csv_file_sem))
+            for (row, col) in zip(csv_reader, generate_palette(len(csv_reader))):
+                id = row["Id"]
+                self.semaphores[id].x = float(row["X"])
+                self.semaphores[id].y = float(row["Y"])
+                self.semaphores[id].col = col
+                self.semx.append(self.semaphores[id].x)
+                self.semy.append(self.semaphores[id].y)
+                self.semcol.append(self.semaphores[id].col)
 
         idx = 0
         trajName = dict()
@@ -61,7 +81,7 @@ class SumoToOsmosisGUI(object):
         for time in intersections:
             for sem in intersections[time]:
                 for veh in intersections[time][sem]:
-                    self.trajectories.trajectories[trajName[veh]].colors[trajScanMap[veh][float(time)]] = sem_to_col[sem]
+                    self.trajectories.trajectories[trajName[veh]].colors[trajScanMap[veh][float(time)]] = self.semaphores[sem].col
 
     def generate(self, target):
         net = SumoNetVis.Net(self.network)
@@ -73,10 +93,11 @@ class SumoToOsmosisGUI(object):
         net.plot(ax, style=USA_STYLE, stripe_width_scale=3)
         bar = progressbar.ProgressBar(maxval=int(self.trajectories.end / self.trajectories.timestep), widgets=widgets).start()
         idx = 1
-        for time in np.arange(self.trajectories.start, self.trajectories.end, self.trajectories.timestep):
+        for time in np.arange(self.trajectories.start, self.trajectories.end+self.trajectories.timestep, self.trajectories.timestep):
             self.trajectories.plot_points(time, ax, animate_color=True)
             f = str(time) + ".png"
             filenames.append(f)
+            ax.scatter(self.semx, self.semy, color=self.semcol)
             plt.savefig(f)
             bar.update(idx)
             idx = idx + 1
@@ -102,10 +123,12 @@ if __name__ == '__main__':
                 netFile = str(Path(cfg).parent / text)
                 sumo_trace = str(os.path.abspath(d["trace_file"]))
                 tracesMatch = str(Path(os.path.abspath(d["OsmosisOutput"])) / (d["experimentName"]+"_tracesMatch.json"))
+                sem_pos = str(Path(os.path.abspath(d["OsmosisOutput"])) / (d["experimentName"]+"_tls.csv"))
                 print(str(tracesMatch))
                 SumoToOsmosisGUI(netFile,
                                  sumo_trace,
-                                 tracesMatch).generate(os.path.abspath(d["SimulationOutGif"]))
+                                 tracesMatch,
+                                 sem_pos).generate(os.path.abspath(d["SimulationOutGif"]))
             except yaml.YAMLError as exc:
                 print(exc)
     else:

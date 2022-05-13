@@ -97,7 +97,7 @@ public class RunSimulator {
         OsmesisBroker.workflowTag.clear();
         int num_user = 1; // number of users
         Calendar calendar = Calendar.getInstance();
-        boolean trace_flag = false; // mean trace events
+        // mean trace events
         // Initialize the CloudSim library
         CloudSim.init(num_user, calendar, false);
         if (conf.terminate_simulation_at > 0)
@@ -168,7 +168,7 @@ public class RunSimulator {
         }
         System.out.println("Loading the traffic light information...");
         Document networkFile = db.parse(network_python);
-        ArrayList<TrafficLightInformation> ls = new ArrayList<>();
+        ArrayList<TrafficLightInformation> tls = new ArrayList<>();
         var traffic_lights = XPathUtil.evaluateNodeList(networkFile, "/net/junction[@type='traffic_light']");
         for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
             var curr = traffic_lights.item(i).getAttributes();
@@ -176,7 +176,7 @@ public class RunSimulator {
             tlInfo.id = curr.getNamedItem("id").getTextContent();
             tlInfo.x = Double.parseDouble(curr.getNamedItem("x").getTextContent());
             tlInfo.y = Double.parseDouble(curr.getNamedItem("y").getTextContent());
-            ls.add(tlInfo);
+            tls.add(tlInfo);
         }
         //System.out.println(ls);
 
@@ -220,8 +220,8 @@ public class RunSimulator {
             List<ConfiguationEntity.IotDeviceEntity> allDevices = new ArrayList<>();
             List<ConfiguationEntity.VMEntity> allDestinations = new ArrayList<>();
             boolean hasSomeResult = false;
-            for (int j = 0, M = ls.size(); j < M; j++) {
-                TrafficLightInformation x = ls.get(j);
+            for (int j = 0, M = tls.size(); j < M; j++) {
+                TrafficLightInformation x = tls.get(j);
                 var distanceQueryResult = tree.getAllWithinDistance(x, distanceSquared);
                 if (!distanceQueryResult.isEmpty()) {
                     hasSomeResult = true;
@@ -259,30 +259,47 @@ public class RunSimulator {
         Path intersection_file_python = Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch.json");
         Files.writeString(intersection_file_python, gson.toJson(inCurrentTime));
 
-        FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-        bw.write(String.join(",", CSVOsmosisAppFromTags.headerApp));
-        bw.newLine();
-        for (var x : xyz) {
-            bw.write(String.join(",", x.toString()));
+        {
+            FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+            bw.write(String.join(",", CSVOsmosisAppFromTags.headerApp));
             bw.newLine();
-        }
-        bw.close();
-        fos.close();
-
-        FileOutputStream batt = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_batt.csv").toFile());
-        BufferedWriter b2 = new BufferedWriter(new OutputStreamWriter(batt));
-        b2.write("Time,Sem,BatteryConsumption");
-        b2.newLine();
-        for (var x : time_to_consumption.entrySet()) {
-            var t = x.getKey();
-            for (var y : x.getValue().entrySet()) {
-                b2.write(t+","+y.getKey()+","+y.getValue());
-                b2.newLine();
+            for (var x : xyz) {
+                bw.write(String.join(",", x.toString()));
+                bw.newLine();
             }
+            bw.close();
+            fos.close();
         }
-        b2.close();
-        batt.close();
+
+        {
+            FileOutputStream batt = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_batt.csv").toFile());
+            BufferedWriter b2 = new BufferedWriter(new OutputStreamWriter(batt));
+            b2.write("Time,Sem,BatteryConsumption");
+            b2.newLine();
+            for (var x : time_to_consumption.entrySet()) {
+                var t = x.getKey();
+                for (var y : x.getValue().entrySet()) {
+                    b2.write(t+","+y.getKey()+","+y.getValue());
+                    b2.newLine();
+                }
+            }
+            b2.close();
+            batt.close();
+        }
+
+        {
+            FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tls.csv").toFile());
+            BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
+            flsF2.write("Id,X,Y");
+            flsF2.newLine();
+            for (var x : tls) {
+                flsF2.write(x.id+","+x.x+","+x.y);
+                flsF2.newLine();
+            }
+            flsF2.close();
+            tlsF.close();
+        }
     }
 
     public void run() {

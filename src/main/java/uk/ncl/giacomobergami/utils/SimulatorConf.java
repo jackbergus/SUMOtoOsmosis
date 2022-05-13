@@ -54,6 +54,15 @@ public class SimulatorConf {
     public long VM_bw;
     public  String VM_cloudletPolicy;
     public double terminate_simulation_at;
+    public String SimulationOutGif;
+
+    public String getSimulationOutGif() {
+        return SimulationOutGif;
+    }
+
+    public void setSimulationOutGif(String simulationOutGif) {
+        SimulationOutGif = simulationOutGif;
+    }
 
     public double getTerminate_simulation_at() {
         return terminate_simulation_at;
