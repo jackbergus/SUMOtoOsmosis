@@ -44,6 +44,8 @@ import uk.ncl.giacomobergami.utils.XPathUtil;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -140,6 +142,7 @@ public class RunSimulator {
 
     public void dumpSumo() throws Exception {
         long initTransact = 0;
+        HashMap<Double, HashMap<String, List<String>>> inCurrentTime = new HashMap<>();
         ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
@@ -152,42 +155,41 @@ public class RunSimulator {
         Document configurationFile = db.parse(file);
         double distanceSquared = conf.maximum_tl_distance_in_meters * conf.maximum_tl_distance_in_meters;
 
-        File simulationXML = Paths.get(file.getParent(), XPathUtil.evaluate(configurationFile, "/configuration/input/net-file/@value"))
+        File network_python = Paths.get(file.getParent(), XPathUtil.evaluate(configurationFile, "/configuration/input/net-file/@value"))
                 .toFile();
-        if (!simulationXML.exists()) {
-            System.err.println("ERR: file " + simulationXML.getAbsolutePath() + " from " + file.getAbsolutePath() + " does not exists!");
+        if (!network_python.exists()) {
+            System.err.println("ERR: file " + network_python.getAbsolutePath() + " from " + file.getAbsolutePath() + " does not exists!");
             System.exit(1);
-        } else if (simulationXML.getAbsolutePath().endsWith(".gz")) {
-            String ap = simulationXML.getAbsolutePath();
+        } else if (network_python.getAbsolutePath().endsWith(".gz")) {
+            String ap = network_python.getAbsolutePath();
             ap = ap.substring(0, ap.lastIndexOf('.'));
-            decompressGzip(simulationXML.toPath(), new File(ap).toPath());
-            simulationXML = new File(ap);
+            decompressGzip(network_python.toPath(), new File(ap).toPath());
+            network_python = new File(ap);
         }
         System.out.println("Loading the traffic light information...");
-        Document networkFile = db.parse(simulationXML);
+        Document networkFile = db.parse(network_python);
         ArrayList<TrafficLightInformation> ls = new ArrayList<>();
         var traffic_lights = XPathUtil.evaluateNodeList(networkFile, "/net/junction[@type='traffic_light']");
         for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
             var curr = traffic_lights.item(i).getAttributes();
             TrafficLightInformation tlInfo = new TrafficLightInformation();
             tlInfo.id = curr.getNamedItem("id").getTextContent();
-            tlInfo.x = Double.valueOf(curr.getNamedItem("x").getTextContent());
-            tlInfo.y = Double.valueOf(curr.getNamedItem("y").getTextContent());
+            tlInfo.x = Double.parseDouble(curr.getNamedItem("x").getTextContent());
+            tlInfo.y = Double.parseDouble(curr.getNamedItem("y").getTextContent());
             ls.add(tlInfo);
         }
         //System.out.println(ls);
 
         CartesianDistanceFunction f = new CartesianDistanceFunction();
-        File trace_info = new File(conf.trace_file);
-        if (!trace_info.exists()) {
-            System.err.println("ERROR: sumo has not built the trace file: " + trace_info.getAbsolutePath());
+        File trajectory_python = new File(conf.trace_file);
+        if (!trajectory_python.exists()) {
+            System.err.println("ERROR: sumo has not built the trace file: " + trajectory_python.getAbsolutePath());
             System.exit(1);
         }
         System.out.println("Loading the vehicle information...");
-        Document trace_document = db.parse(trace_info);
+        Document trace_document = db.parse(trajectory_python);
         ArrayList<CSVOsmosisRecord> csvFile = new ArrayList<>();
         var timestamp_eval = XPathUtil.evaluateNodeList(trace_document, "/fcd-export/timestep");
-        //ArrayList<Pair<Double, HashMultimap<TrafficLightInformation, VehicleRecord>>> simulation_parsing = new ArrayList<>(timestamp_eval.getLength());
         for (int i = 0, N = timestamp_eval.getLength(); i<N; i++) {
             csvFile.clear();
             var curr = timestamp_eval.item(i);
@@ -201,12 +203,12 @@ public class RunSimulator {
                     assert (Objects.equals(veh.getNodeName(), "vehicle"));
                     var attrs = veh.getAttributes();
                     VehicleRecord rec = new VehicleRecord();
-                    rec.angle = Double.valueOf(attrs.getNamedItem("angle").getTextContent());
-                    rec.x = Double.valueOf(attrs.getNamedItem("x").getTextContent());
-                    rec.y = Double.valueOf(attrs.getNamedItem("y").getTextContent());
-                    rec.speed = Double.valueOf(attrs.getNamedItem("speed").getTextContent());
-                    rec.pos = Double.valueOf(attrs.getNamedItem("pos").getTextContent());
-                    rec.slope = Double.valueOf(attrs.getNamedItem("slope").getTextContent());
+                    rec.angle = Double.parseDouble(attrs.getNamedItem("angle").getTextContent());
+                    rec.x = Double.parseDouble(attrs.getNamedItem("x").getTextContent());
+                    rec.y = Double.parseDouble(attrs.getNamedItem("y").getTextContent());
+                    rec.speed = Double.parseDouble(attrs.getNamedItem("speed").getTextContent());
+                    rec.pos = Double.parseDouble(attrs.getNamedItem("pos").getTextContent());
+                    rec.slope = Double.parseDouble(attrs.getNamedItem("slope").getTextContent());
                     rec.id = (attrs.getNamedItem("id").getTextContent());
                     rec.type = (attrs.getNamedItem("type").getTextContent());
                     rec.lane = (attrs.getNamedItem("lane").getTextContent());
@@ -223,7 +225,11 @@ public class RunSimulator {
                 var distanceQueryResult = tree.getAllWithinDistance(x, distanceSquared);
                 if (!distanceQueryResult.isEmpty()) {
                     hasSomeResult = true;
+                    inCurrentTime.putIfAbsent(currTime, new HashMap<>());
+                    var lsx = new ArrayList<String>();
+                    inCurrentTime.get(currTime).put(x.id, lsx);
                     for (var veh : distanceQueryResult) {
+                        lsx.add(veh.id);
                         allDevices.add(veh.asIoDevice(conf.bw,
                                 conf.max_battery_capacity,
                                 conf.battery_sensing_rate,
@@ -246,9 +252,12 @@ public class RunSimulator {
                 fw.close();
                 File CSV_CONF_FILE = Paths.get(folderOut.getAbsolutePath(), confCURR+".csv").toFile();
                 CSVOsmosisRecord.WriteCsv(CSV_CONF_FILE, csvFile);
-                initTransact += runOsmosis(xyz, currTime.doubleValue(), jsonFile.getAbsolutePath(), CSV_CONF_FILE.getAbsolutePath(), initTransact);
+                initTransact += runOsmosis(xyz, currTime, jsonFile.getAbsolutePath(), CSV_CONF_FILE.getAbsolutePath(), initTransact);
             }
         }
+
+        Path intersection_file_python = Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch.json");
+        Files.writeString(intersection_file_python, gson.toJson(inCurrentTime));
 
         FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
