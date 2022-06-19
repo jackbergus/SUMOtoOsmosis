@@ -375,16 +375,16 @@ public class NoOsmosis {
                 // the requests that the semaphore might receive from the siblings, the better
                 // Sorting the candidates accordingly.
                 // Last, splitting the semaphores into free and overloaded.
-                var map = x.getValue().stream().sorted(Comparator.comparingDouble(y -> {
-                    var distrOf = distributorOf.get(y.id);
-                    var demandForecast = 1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))+1.0);
-                    return demandForecast * availFormula(updated, maxThreshold, semList.get(semId.get(x.getKey())), y);
-                }))
+                var map = x.getValue().stream()
+                        .sorted(Comparator.comparingDouble(y -> {
+                            var distrOf = distributorOf.get(y.id);
+                            var demandForecast = 1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))+1.0);
+                            return demandForecast * availFormula(updated, maxThreshold, semList.get(semId.get(x.getKey())), y);
+                        }))
                         .collect(Collectors.groupingBy(y -> {
                             var ls = updated.get(y.id);
                             return (ls == null ? 0 : ls.size()) < maxThreshold;
-                       }));
-
+                        }));
                 var locVehs = new ArrayList<>(strayVehFrom.get(x.getKey()));
                 int i = 0, N = locVehs.size();
 
