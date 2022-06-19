@@ -27,16 +27,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
-import org.cloudbus.cloudsim.edge.utils.LogUtil;
-import org.cloudbus.osmosis.core.*;
+import org.jblas.DoubleMatrix;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import uk.ncl.giacomobergami.osmosis.CSVOsmosisRecord;
 import uk.ncl.giacomobergami.sumo.TrafficLightInformation;
 import uk.ncl.giacomobergami.sumo.VehicleRecord;
-import uk.ncl.giacomobergami.utils.CSVOsmosisAppFromTags;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
 import uk.ncl.giacomobergami.utils.XPathUtil;
@@ -44,23 +41,23 @@ import uk.ncl.giacomobergami.utils.XPathUtil;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-public class RunSimulator {
+public class NoOsmosis {
 
     private boolean hasRun;
     private final SimulatorConf conf;
     private final DocumentBuilderFactory dbf;
     private final DocumentBuilder db;
-    private final String aMel;
-    private ConfiguationEntity canvas;
+//    private final String aMel;
+//    private ConfiguationEntity canvas;
     private final Gson gson;
-    private final SortedMap<Double, HashMap<String, Double>> time_to_consumption;
+//    private final SortedMap<Double, HashMap<String, Double>> time_to_consumption;
 
     private void runSumo() throws IOException {
         if (new File(conf.trace_file).exists()) {
@@ -90,41 +87,6 @@ public class RunSimulator {
         bw.close();
     }
 
-    public long runOsmosis(ArrayList<CSVOsmosisAppFromTags.TransactionRecord> x, double time, String json, String csv, long initTransact) throws Exception{
-        OsmosisBuilder topologyBuilder;
-        OsmesisBroker osmesisBroker;
-        OsmesisAppsParser.appList.clear();
-        OsmesisBroker.workflowTag.clear();
-        int num_user = 1; // number of users
-        Calendar calendar = Calendar.getInstance();
-        // mean trace events
-        // Initialize the CloudSim library
-        CloudSim.init(num_user, calendar, false);
-        if (conf.terminate_simulation_at > 0)
-            CloudSim.terminateSimulation(conf.terminate_simulation_at);
-        osmesisBroker  = new OsmesisBroker("OsmesisBroker");
-        topologyBuilder = new OsmosisBuilder(osmesisBroker);
-        ConfiguationEntity config = buildTopologyFromFile(json);
-        topologyBuilder.buildTopology(config);
-        OsmosisOrchestrator maestro = new OsmosisOrchestrator();
-        OsmesisAppsParser.startParsingExcelAppFile(csv);
-        List<SDNController> controllers = new ArrayList<>();
-        for(OsmesisDatacenter osmesisDC : topologyBuilder.getOsmesisDatacentres()){
-            osmesisBroker.submitVmList(osmesisDC.getVmList(), osmesisDC.getId());
-            controllers.add(osmesisDC.getSdnController());
-            osmesisDC.getSdnController().setWanOorchestrator(maestro);
-        }
-        controllers.add(topologyBuilder.getSdWanController());
-        maestro.setSdnControllers(controllers);
-        osmesisBroker.submitOsmesisApps(OsmesisAppsParser.appList);
-        osmesisBroker.setDatacenters(topologyBuilder.getOsmesisDatacentres());
-        CloudSim.startSimulation();
-        LogUtil.simulationFinished();
-        new File(csv).delete();
-        new File(json).delete();
-        return CSVOsmosisAppFromTags.dump_current_conf(x, new File(conf.OsmosisOutput), conf.experimentName, 1.0, time, initTransact, time_to_consumption);
-    }
-
     public static void decompressGzip(Path source, Path target) throws IOException {
         try (GZIPInputStream gis = new GZIPInputStream(
                 new FileInputStream(source.toFile()));
@@ -141,9 +103,8 @@ public class RunSimulator {
     }
 
     public void dumpSumo() throws Exception {
-        long initTransact = 0;
         HashMap<Double, HashMap<String, List<String>>> inCurrentTime = new HashMap<>();
-        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
+//        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
         if (! folderOut.exists()){
@@ -169,6 +130,7 @@ public class RunSimulator {
         System.out.println("Loading the traffic light information...");
         Document networkFile = db.parse(network_python);
         ArrayList<TrafficLightInformation> tls = new ArrayList<>();
+        HashMap<String, Integer> tlsMap = new HashMap<>();
         var traffic_lights = XPathUtil.evaluateNodeList(networkFile, "/net/junction[@type='traffic_light']");
         for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
             var curr = traffic_lights.item(i).getAttributes();
@@ -177,8 +139,19 @@ public class RunSimulator {
             tlInfo.x = Double.parseDouble(curr.getNamedItem("x").getTextContent());
             tlInfo.y = Double.parseDouble(curr.getNamedItem("y").getTextContent());
             tls.add(tlInfo);
+            tlsMap.put(tlInfo.id, i);
         }
-        //System.out.println(ls);
+        DoubleMatrix sqDistanceMatrix = DoubleMatrix.zeros(traffic_lights.getLength(),traffic_lights.getLength());
+        for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
+            var semX = tls.get(i);
+            for (int j = 0; j<i; j++) {
+                var semY = tls.get(j);
+                final double deltaX = semX.x - semY.x;
+                final double deltaY = semX.y - semY.y;
+                sqDistanceMatrix.put(i, j, ((deltaX * deltaX) + (deltaY * deltaY)));
+                sqDistanceMatrix.put(j, i, ((deltaX * deltaX) + (deltaY * deltaY)));
+            }
+        }
 
         CartesianDistanceFunction f = new CartesianDistanceFunction();
         File trajectory_python = new File(conf.trace_file);
@@ -236,62 +209,78 @@ public class RunSimulator {
                                 conf.battery_sending_rate,
                                 conf.network_type,
                                 conf.protocol));
-                        csvFile.add(new CSVOsmosisRecord(j, x, veh, conf, aMel));
+//                        csvFile.add(new CSVOsmosisRecord(j, x, veh, conf, aMel));
                     }
                     allDestinations.add(x.asVMEntity(conf.VM_pes, conf.VM_mips, conf.VM_ram, conf.VM_storage, conf.VM_bw, conf.VM_cloudletPolicy));
                 }
             }
             if (hasSomeResult) {
-                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
-                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
-                String confCURR = conf.experimentName+"_t"+currTime;
-                File jsonFile =  Paths.get(folderOut.getAbsolutePath(), confCURR+".json").toFile();
-                var fw = new FileWriter(jsonFile);
-                gson.toJson(canvas, fw);
-                fw.flush();
-                fw.close();
-                File CSV_CONF_FILE = Paths.get(folderOut.getAbsolutePath(), confCURR+".csv").toFile();
-                CSVOsmosisRecord.WriteCsv(CSV_CONF_FILE, csvFile);
-                initTransact += runOsmosis(xyz, currTime, jsonFile.getAbsolutePath(), CSV_CONF_FILE.getAbsolutePath(), initTransact);
+                simulateTraffic(inCurrentTime.get(currTime),
+                        tls,
+                        tlsMap,
+                        sqDistanceMatrix,
+                        20);
+//                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
+//                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
+//                String confCURR = conf.experimentName+"_t"+currTime;
+//                File jsonFile =  Paths.get(folderOut.getAbsolutePath(), confCURR+".json").toFile();
+//                var fw = new FileWriter(jsonFile);
+//                gson.toJson(canvas, fw);
+//                fw.flush();
+//                fw.close();
+//                File CSV_CONF_FILE = Paths.get(folderOut.getAbsolutePath(), confCURR+".csv").toFile();
+//                CSVOsmosisRecord.WriteCsv(CSV_CONF_FILE, csvFile);
             }
         }
 
         Path intersection_file_python = Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch.json");
         Files.writeString(intersection_file_python, gson.toJson(inCurrentTime));
 
-        {
-            FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
-            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-            bw.write(String.join(",", CSVOsmosisAppFromTags.headerApp));
-            bw.newLine();
-            for (var x : xyz) {
-                bw.write(String.join(",", x.toString()));
-                bw.newLine();
-            }
-            bw.close();
-            fos.close();
-        }
 
-        {
-            FileOutputStream batt = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_batt.csv").toFile());
-            BufferedWriter b2 = new BufferedWriter(new OutputStreamWriter(batt));
-            b2.write("Time,Sem,BatteryConsumption");
-            b2.newLine();
-            for (var x : time_to_consumption.entrySet()) {
-                var t = x.getKey();
-                for (var y : x.getValue().entrySet()) {
-                    b2.write(t+","+y.getKey()+","+y.getValue());
-                    b2.newLine();
-                }
-            }
-            b2.close();
-            batt.close();
-        }
+//        {
+//            FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
+//            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+//            bw.write(String.join(",", CSVOsmosisAppFromTags.headerApp));
+//            bw.newLine();
+//            for (var x : xyz) {
+//                bw.write(String.join(",", x.toString()));
+//                bw.newLine();
+//            }
+//            bw.close();
+//            fos.close();
+//        }
+
+//        {
+//            FileOutputStream batt = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_batt.csv").toFile());
+//            BufferedWriter b2 = new BufferedWriter(new OutputStreamWriter(batt));
+//            b2.write("Time,Sem,BatteryConsumption");
+//            b2.newLine();
+//            for (var x : time_to_consumption.entrySet()) {
+//                var t = x.getKey();
+//                for (var y : x.getValue().entrySet()) {
+//                    b2.write(t+","+y.getKey()+","+y.getValue());
+//                    b2.newLine();
+//                }
+//            }
+//            b2.close();
+//            batt.close();
+//        }
 
         {
             FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tls.csv").toFile());
             BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
             flsF2.write("Id,X,Y");
+            var XMax = tls.stream().map(x -> x.x).max(Comparator.comparingDouble(y -> y)).get();
+            var YMin = tls.stream().map(x -> x.y).min(Comparator.comparingDouble(y -> y)).get();
+            tls.sort(Comparator.comparingDouble(sem -> {
+                double x = sem.x - XMax;
+                double y = sem.y - YMin;
+                return (x*x)+(y*y);
+            }));
+            for (var i = 0; i<5; i++) {
+                System.out.println(tls.get(i).id);
+            }
+
             flsF2.newLine();
             for (var x : tls) {
                 flsF2.write(x.id+","+x.x+","+x.y);
@@ -299,6 +288,151 @@ public class RunSimulator {
             }
             flsF2.close();
             tlsF.close();
+        }
+
+        {
+            FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch_toplot.csv").toFile());
+            BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
+            flsF2.write("SimTime,Sem,NVehs");
+            flsF2.newLine();
+            List<String> e = Collections.emptyList();
+            for (var cp : inCurrentTime.entrySet()) {
+                Double time = cp.getKey();
+                for (var sem : tls) {
+                    flsF2.write(time+","+sem.id+","+cp.getValue().getOrDefault(sem.id, e).size());
+                    flsF2.newLine();
+                }
+            }
+            flsF2.close();
+            tlsF.close();
+        }
+    }
+
+    private void simulateTraffic(HashMap<String, List<String>> stringListHashMap,
+                                 ArrayList<TrafficLightInformation> semList,
+                                 HashMap<String, Integer> semId,
+                                 DoubleMatrix sqSemDistance,
+                                 int maxThreshold) {
+        if (stringListHashMap == null) return;
+        HashMap<String, List<String>> updated =  new HashMap<>();
+        stringListHashMap.forEach((x,y)-> updated.put(x, new ArrayList<>(y)));
+
+        Comparator<TrafficLightInformation> IntCmp = Comparator.comparingInt(z -> {
+            var x = updated.get(z.id);
+            return  (x == null) ? 0 : x.size();
+        });
+
+        // Sorting the semaphores by the most critical ones
+        List<TrafficLightInformation> sortedSemaphores = semList.stream()
+                .sorted(IntCmp.reversed())
+                .collect(Collectors.toList());
+
+        HashMap<String, Set<String>> strayVehFrom = new HashMap<>();
+        Set<String> strayVehs = new HashSet<>(); // Vehicles that might fall off from an association
+        Set<String> allVehs = new HashSet<>(); // Vehicles already associated to a semaphore
+        for (var sem : sortedSemaphores) {
+            var semIdX = semId.get(sem.id);
+            var vehs = updated.get(sem.id);
+            if ((vehs == null) || vehs.size() < maxThreshold) break;
+
+            var LS = vehs.subList(maxThreshold-1, vehs.size());
+            strayVehs.addAll(LS);
+            strayVehFrom.put(sem.id, new HashSet<>(LS));
+            vehs.removeAll(LS);
+            allVehs.addAll(vehs);
+        }
+        strayVehs.removeAll(allVehs);
+        strayVehFrom.forEach((k,v) -> v.removeAll(allVehs));
+        strayVehFrom.entrySet().stream().filter(cp-> cp.getValue().isEmpty())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList())
+                .forEach(strayVehFrom::remove);
+
+        // Vehicles to get re-allocated
+        HashMap<String, Set<String>> distributorOf = new HashMap<>();
+        HashMap<String, List<TrafficLightInformation>> personalDistributors = new HashMap<>();
+        if (!strayVehs.isEmpty()) {
+            for (var sem : strayVehFrom.keySet()) {
+                var semIdX = semId.get(sem);
+                var distributor = semList.stream()
+                        .filter(x -> {
+                            var ls = updated.get(x.id);
+                            return (!x.id.equals(sem)) && ((ls == null ? 0 : ls.size()) < maxThreshold);
+                        })
+//                        .sorted(Comparator.comparingDouble(x -> availFormula(updated, maxThreshold, semList.get(semIdX), x)))
+                        .collect(Collectors.toList());
+//                        .collect(Collectors.groupingBy(x -> {
+//                            var ls = updated.get(x.id);
+//                            return (ls == null ? 0 : ls.size()) > maxThreshold;
+//                        }));
+                for (var cp2 : distributor) {
+                    if (!distributorOf.containsKey(cp2.id))
+                        distributorOf.put(cp2.id, new HashSet<>());
+                    distributorOf.get(cp2.id).add(sem);
+                }
+                personalDistributors.put(sem, distributor);
+            }
+
+            for (var x : personalDistributors.entrySet()) {
+                var map = x.getValue().stream().sorted(Comparator.comparingDouble(y -> {
+                    var distrOf = distributorOf.get(y.id);
+                    var demandForecast = 1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))+1.0);
+                    return demandForecast * availFormula(updated, maxThreshold, semList.get(semId.get(x.getKey())), y);
+                }))
+                        .collect(Collectors.groupingBy(y -> {
+                            var ls = updated.get(y.id);
+                            return (ls == null ? 0 : ls.size()) < maxThreshold;
+                       }));
+
+                var locVehs = new ArrayList<>(strayVehFrom.get(x.getKey()));
+                int i = 0, N = locVehs.size();
+
+                Set<TrafficLightInformation> okTL = new HashSet<>(), stopIL = new HashSet<>();
+                var mapOk =  map.get(true);
+                if (mapOk != null) okTL.addAll(mapOk);
+                mapOk = map.get(false);
+                if (mapOk != null)
+                    stopIL.addAll(mapOk);
+                while (!okTL.isEmpty()) {
+                    // Simulating an uniform distribution among the available elements.
+                    // Then, stopping as soon as they get full
+                    if (i>=N) break;
+                    for (var sem : okTL) {
+                        if (i>=N) break;
+                        updated.putIfAbsent(sem.id, new ArrayList<>());
+                        if (updated.get(sem.id).size() > maxThreshold) {
+                            stopIL.add(sem);
+                        } else {
+                            updated.get(sem.id).add(locVehs.get(i++));
+                        }
+                    }
+                    okTL.removeAll(stopIL);
+                }
+                while (i<N) {
+                    for (var sem : stopIL) {
+                        if (i>=N) break;
+                        updated.putIfAbsent(sem.id, new ArrayList<>());
+                        updated.get(sem.id).add(locVehs.get(i++));
+                    }
+                }
+            }
+
+            stringListHashMap.putAll(updated);
+        }
+    }
+
+    private double availFormula(HashMap<String, List<String>> stringListHashMap, int maxThreshold, TrafficLightInformation sem, TrafficLightInformation x) {
+        var ls = stringListHashMap.get(x.id);
+        double xAvail = maxThreshold - (ls == null ? 0 : ls.size());
+        if (Math.abs(xAvail- Double.MIN_NORMAL)>0) {
+            double absAvail = Math.abs(xAvail);
+            double xDistX = (x.x - sem.x),
+                    xDistY = (x.y - sem.y);
+            double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
+            xDistSq = xDistSq / (xDistSq+1); // normalization
+            return Math.signum(xAvail) * (absAvail / (absAvail + 1)) * xDistSq;
+        } else {
+            return 0.0;
         }
     }
 
@@ -314,7 +448,7 @@ public class RunSimulator {
         }
     }
 
-    public RunSimulator() throws Exception {
+    public NoOsmosis() throws Exception {
         File f = new File("sumo_configuration_file_path.yaml");
         if (!f.exists()) {
             System.err.println("ERROR: the current folder should contain a file called 'sumo_configuration_file_path.yaml'");
@@ -326,22 +460,22 @@ public class RunSimulator {
         dbf = DocumentBuilderFactory.newInstance();
         db = dbf.newDocumentBuilder();
         gson = new GsonBuilder().setPrettyPrinting().create();
-        canvas = buildTopologyFromFile(conf.default_json_conf_file);
-        if (canvas.getEdgeDatacenter().isEmpty()) {
-            System.err.println("ERROR: the json configuration file should contain at least one edge configuration");
-            System.exit(1);
-        }
-        if (canvas.getEdgeDatacenter().get(0).getMELEntities().isEmpty()) {
-            System.err.println("ERROR: the json configuration file should contain at least one edge MEL");
-            System.exit(1);
-        }
-        aMel = canvas.getEdgeDatacenter().get(0).getMELEntities().get(0).getName();
-        time_to_consumption = new TreeMap<>();
+//        canvas = buildTopologyFromFile(conf.default_json_conf_file);
+//        if (canvas.getEdgeDatacenter().isEmpty()) {
+//            System.err.println("ERROR: the json configuration file should contain at least one edge configuration");
+//            System.exit(1);
+//        }
+//        if (canvas.getEdgeDatacenter().get(0).getMELEntities().isEmpty()) {
+//            System.err.println("ERROR: the json configuration file should contain at least one edge MEL");
+//            System.exit(1);
+//        }
+//        aMel = canvas.getEdgeDatacenter().get(0).getMELEntities().get(0).getName();
+//        time_to_consumption = new TreeMap<>();
         hasRun = false;
     }
 
     public static void main(String[] args) throws Exception {
-        var x = new RunSimulator();
+        var x = new NoOsmosis();
         x.run();
     }
 

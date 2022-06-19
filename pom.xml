@@ -55,7 +55,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>uk.ncl.giacomobergami.RunSimulator</mainClass>
+                            <mainClass>uk.ncl.giacomobergami.RunFullSimulator</mainClass>
                         </manifest>
                     </archive>
 
@@ -171,6 +171,11 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>31.1-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jblas</groupId>
+            <artifactId>jblas</artifactId>
+            <version>1.2.4</version>
         </dependency>
 
     </dependencies>
