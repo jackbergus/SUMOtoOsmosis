@@ -218,7 +218,6 @@ public class NoOsmosis {
                 simulateTraffic(inCurrentTime.get(currTime),
                         tls,
                         tlsMap,
-                        sqDistanceMatrix,
                         20);
 //                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
 //                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
@@ -311,8 +310,7 @@ public class NoOsmosis {
     private void simulateTraffic(HashMap<String, List<String>> stringListHashMap,
                                  ArrayList<TrafficLightInformation> semList,
                                  HashMap<String, Integer> semId,
-                                 DoubleMatrix sqSemDistance,
-                                 int maxThreshold) {
+                                 final int maxThreshold) {
         if (stringListHashMap == null) return;
         HashMap<String, List<String>> updated =  new HashMap<>();
         stringListHashMap.forEach((x,y)-> updated.put(x, new ArrayList<>(y)));
@@ -341,6 +339,8 @@ public class NoOsmosis {
             vehs.removeAll(LS);
             allVehs.addAll(vehs);
         }
+
+        // Removing the stray vehicles that are already associated to a good semaphore
         strayVehs.removeAll(allVehs);
         strayVehFrom.forEach((k,v) -> v.removeAll(allVehs));
         strayVehFrom.entrySet().stream().filter(cp-> cp.getValue().isEmpty())
@@ -352,19 +352,16 @@ public class NoOsmosis {
         HashMap<String, Set<String>> distributorOf = new HashMap<>();
         HashMap<String, List<TrafficLightInformation>> personalDistributors = new HashMap<>();
         if (!strayVehs.isEmpty()) {
+
+            // Determining which semaphores will be affected by over-demands by busy semaphores
             for (var sem : strayVehFrom.keySet()) {
-                var semIdX = semId.get(sem);
+                // A valid distributor is a semaphore which is not currently full
                 var distributor = semList.stream()
                         .filter(x -> {
                             var ls = updated.get(x.id);
                             return (!x.id.equals(sem)) && ((ls == null ? 0 : ls.size()) < maxThreshold);
                         })
-//                        .sorted(Comparator.comparingDouble(x -> availFormula(updated, maxThreshold, semList.get(semIdX), x)))
                         .collect(Collectors.toList());
-//                        .collect(Collectors.groupingBy(x -> {
-//                            var ls = updated.get(x.id);
-//                            return (ls == null ? 0 : ls.size()) > maxThreshold;
-//                        }));
                 for (var cp2 : distributor) {
                     if (!distributorOf.containsKey(cp2.id))
                         distributorOf.put(cp2.id, new HashSet<>());
@@ -374,6 +371,10 @@ public class NoOsmosis {
             }
 
             for (var x : personalDistributors.entrySet()) {
+                // The more the semaphores are near to x, the more the space left, and the less
+                // the requests that the semaphore might receive from the siblings, the better
+                // Sorting the candidates accordingly.
+                // Last, splitting the semaphores into free and overloaded.
                 var map = x.getValue().stream().sorted(Comparator.comparingDouble(y -> {
                     var distrOf = distributorOf.get(y.id);
                     var demandForecast = 1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))+1.0);
@@ -393,9 +394,11 @@ public class NoOsmosis {
                 mapOk = map.get(false);
                 if (mapOk != null)
                     stopIL.addAll(mapOk);
+
+                // Simulating an uniform distribution among the available elements.
+                // Then, stopping as soon as they get full
                 while (!okTL.isEmpty()) {
-                    // Simulating an uniform distribution among the available elements.
-                    // Then, stopping as soon as they get full
+                    // Continuing to allocate vehicles until there is something left
                     if (i>=N) break;
                     for (var sem : okTL) {
                         if (i>=N) break;
@@ -408,6 +411,8 @@ public class NoOsmosis {
                     }
                     okTL.removeAll(stopIL);
                 }
+
+                // Uniformly re-distribuiting the load among the other remaining semaphores
                 while (i<N) {
                     for (var sem : stopIL) {
                         if (i>=N) break;
@@ -460,17 +465,6 @@ public class NoOsmosis {
         dbf = DocumentBuilderFactory.newInstance();
         db = dbf.newDocumentBuilder();
         gson = new GsonBuilder().setPrettyPrinting().create();
-//        canvas = buildTopologyFromFile(conf.default_json_conf_file);
-//        if (canvas.getEdgeDatacenter().isEmpty()) {
-//            System.err.println("ERROR: the json configuration file should contain at least one edge configuration");
-//            System.exit(1);
-//        }
-//        if (canvas.getEdgeDatacenter().get(0).getMELEntities().isEmpty()) {
-//            System.err.println("ERROR: the json configuration file should contain at least one edge MEL");
-//            System.exit(1);
-//        }
-//        aMel = canvas.getEdgeDatacenter().get(0).getMELEntities().get(0).getName();
-//        time_to_consumption = new TreeMap<>();
         hasRun = false;
     }
 
