@@ -429,7 +429,7 @@ public class NoOsmosis {
     private double availFormula(HashMap<String, List<String>> stringListHashMap, int maxThreshold, TrafficLightInformation sem, TrafficLightInformation x) {
         var ls = stringListHashMap.get(x.id);
         double xAvail = maxThreshold - (ls == null ? 0 : ls.size());
-        if (Math.abs(xAvail- Double.MIN_NORMAL)>0) {
+        if (Math.abs(xAvail)>=Double.MIN_NORMAL) {
             double absAvail = Math.abs(xAvail);
             double xDistX = (x.x - sem.x),
                     xDistY = (x.y - sem.y);
