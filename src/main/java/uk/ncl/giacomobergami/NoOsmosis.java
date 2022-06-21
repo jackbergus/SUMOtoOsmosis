@@ -215,10 +215,12 @@ public class NoOsmosis {
                 }
             }
             if (hasSomeResult) {
-                simulateTraffic(inCurrentTime.get(currTime),
-                        tls,
-                        tlsMap,
-                        20);
+                if (conf.isDo_thresholding())
+                    simulateTraffic(inCurrentTime.get(currTime),
+                            tls,
+                            tlsMap,
+                            conf.getMax_threshold(),
+                            conf.getBest_distance());
 //                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
 //                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
 //                String confCURR = conf.experimentName+"_t"+currTime;
@@ -276,9 +278,9 @@ public class NoOsmosis {
                 double y = sem.y - YMin;
                 return (x*x)+(y*y);
             }));
-            for (var i = 0; i<5; i++) {
-                System.out.println(tls.get(i).id);
-            }
+
+            System.out.println(            tls.subList(0, 8).stream().map(x -> x.id
+            ).collect(Collectors.joining("\",\"","LS <- list(\"", "\")")));
 
             flsF2.newLine();
             for (var x : tls) {
@@ -310,10 +312,12 @@ public class NoOsmosis {
     private void simulateTraffic(HashMap<String, List<String>> stringListHashMap,
                                  ArrayList<TrafficLightInformation> semList,
                                  HashMap<String, Integer> semId,
-                                 final int maxThreshold) {
+                                 final int maxThreshold,
+                                 int best_distance) {
         if (stringListHashMap == null) return;
         HashMap<String, List<String>> updated =  new HashMap<>();
         stringListHashMap.forEach((x,y)-> updated.put(x, new ArrayList<>(y)));
+        int bestSqDistance = best_distance * best_distance;
 
         Comparator<TrafficLightInformation> IntCmp = Comparator.comparingInt(z -> {
             var x = updated.get(z.id);
@@ -383,7 +387,11 @@ public class NoOsmosis {
                         }))
                         .collect(Collectors.groupingBy(y -> {
                             var ls = updated.get(y.id);
-                            return (ls == null ? 0 : ls.size()) < maxThreshold;
+                            var sem = semList.get(semId.get(x.getKey()));
+                            double xDistX = (y.x - sem.x),
+                                    xDistY = (y.y - sem.y);
+                            double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
+                            return ((ls == null ? 0 : ls.size()) < maxThreshold) && (xDistSq < bestSqDistance);
                         }));
                 var locVehs = new ArrayList<>(strayVehFrom.get(x.getKey()));
                 int i = 0, N = locVehs.size();

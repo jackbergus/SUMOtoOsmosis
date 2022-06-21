@@ -55,6 +55,33 @@ public class SimulatorConf {
     public  String VM_cloudletPolicy;
     public double terminate_simulation_at;
     public String SimulationOutGif;
+    public int max_threshold;
+    public int best_distance;
+    public boolean do_thresholding;
+
+    public boolean isDo_thresholding() {
+        return do_thresholding;
+    }
+
+    public void setDo_thresholding(boolean do_thresholding) {
+        this.do_thresholding = do_thresholding;
+    }
+
+    public int getBest_distance() {
+        return best_distance;
+    }
+
+    public void setBest_distance(int best_distance) {
+        this.best_distance = best_distance;
+    }
+
+    public int getMax_threshold() {
+        return max_threshold;
+    }
+
+    public void setMax_threshold(int max_threshold) {
+        this.max_threshold = max_threshold;
+    }
 
     public String getSimulationOutGif() {
         return SimulationOutGif;

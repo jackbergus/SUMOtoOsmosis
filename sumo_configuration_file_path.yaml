@@ -1,5 +1,5 @@
 # The name associated to the experiment
-experimentName: "TAVF_H"
+experimentName: "TAVF_H_yes_th"
 # The location where the non gui Sumo configuration file is located
 # Path towards the command line version of Sumo
 sumo_configuration_file_path: "/home/giacomo/IdeaProjects/Converter/sumo/bologna/TAVF-Hamburg/run_simulation.sumocfg"
@@ -43,3 +43,6 @@ VM_bw : 1000
 VM_cloudletPolicy: "org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
 #VM_vmm: "xxx"
 terminate_simulation_at: 0
+max_threshold: 20
+best_distance: 500
+do_thresholding: true
