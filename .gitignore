@@ -7,3 +7,4 @@ sumo_log.txt
 sumo_trace.xml
 target/
 target/*
+paper/*.mpg4
