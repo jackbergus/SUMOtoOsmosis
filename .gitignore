@@ -8,3 +8,4 @@ sumo_trace.xml
 target/
 target/*
 paper/*.mpg4
+paper/*.avi
