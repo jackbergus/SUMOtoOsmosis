@@ -9,3 +9,4 @@ target/
 target/*
 paper/*.mpg4
 paper/*.avi
+paper/*.gif
