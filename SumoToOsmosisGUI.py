@@ -73,9 +73,12 @@ class SumoToOsmosisGUI(object):
             csv_reader = list(csv.DictReader(csv_file_sem))
             for (row, col) in zip(csv_reader, generate_palette(len(csv_reader))):
                 id = row["Id"]
-                self.semaphores[id].x = float(row["X"])
-                self.semaphores[id].y = float(row["Y"])
-                self.semaphores[id].col = col
+                if id not in self.semaphores:
+                    self.semaphores[id] = Point(float(row["X"]), float(row["Y"]), col)
+                else:
+                    self.semaphores[id].x = float(row["X"])
+                    self.semaphores[id].y = float(row["Y"])
+                    self.semaphores[id].col = col
                 self.semx.append(self.semaphores[id].x)
                 self.semy.append(self.semaphores[id].y)
                 self.semcol.append(self.semaphores[id].col)
@@ -156,6 +159,7 @@ class SumoToOsmosisGUI(object):
             f.write("\n".join(mainFile))
 
     def generate(self, target):
+        print(self.network)
         net = SumoNetVis.Net(self.network)
         fig, ax = plt.subplots()
         fig.set_figheight(10)
@@ -163,7 +167,6 @@ class SumoToOsmosisGUI(object):
 
         filenames = []
         net.plot(ax, style=USA_STYLE, stripe_width_scale=3)
-        bar = progressbar.ProgressBar(maxval=int(self.trajectories.end / self.trajectories.timestep), widgets=widgets).start()
         idx = 1
         for time in np.arange(self.trajectories.start, self.trajectories.end+self.trajectories.timestep, self.trajectories.timestep):
             self.trajectories.plot_points(time, ax, animate_color=True)
@@ -171,7 +174,7 @@ class SumoToOsmosisGUI(object):
             filenames.append(f)
             ax.scatter(self.semx, self.semy, color=self.semcol)
             plt.savefig(f)
-            bar.update(idx)
+            print(idx)
             idx = idx + 1
 
         images = []
@@ -212,6 +215,7 @@ if __name__ == '__main__':
                 if latex:
                     obj.generate_latex(os.path.abspath(d["SimulationOutGif"])+"_latex.tex", factor, d["maximum_tl_distance_in_meters"])
                 elif dynamic:
+                    print(os.path.abspath(d["SimulationOutGif"]))
                     obj.generate(os.path.abspath(d["SimulationOutGif"]))
                 else:
                     obj.generate_static(os.path.abspath(d["SimulationOutGif"]+"_static.png"))
