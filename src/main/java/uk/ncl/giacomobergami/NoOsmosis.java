@@ -107,6 +107,13 @@ public class NoOsmosis {
 //        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
+        File folderOut2 = new File(conf.OsmosisOutput);
+        if (! folderOut2.exists()) {
+            folderOut2.mkdirs();
+        } else if (folderOut2.isFile()) {
+            System.err.println("ERROR: the current file exists, and it is a file: a folder was expected. " + folderOut2);
+            System.exit(1);
+        }
         if (! folderOut.exists()){
             folderOut.mkdirs();
         } else if (folderOut.isFile())  {
@@ -164,6 +171,7 @@ public class NoOsmosis {
         ArrayList<CSVOsmosisRecord> csvFile = new ArrayList<>();
         var timestamp_eval = XPathUtil.evaluateNodeList(trace_document, "/fcd-export/timestep");
         for (int i = 0, N = timestamp_eval.getLength(); i<N; i++) {
+            Set<String> visitedVehicles = new HashSet<>();
             csvFile.clear();
             var curr = timestamp_eval.item(i);
             Double currTime = Double.valueOf(curr.getAttributes().getNamedItem("time").getTextContent());
@@ -201,26 +209,59 @@ public class NoOsmosis {
                     inCurrentTime.putIfAbsent(currTime, new HashMap<>());
                     var lsx = new ArrayList<String>();
                     inCurrentTime.get(currTime).put(x.id, lsx);
+                    boolean hasInsertion = false;
                     for (var veh : distanceQueryResult) {
-                        lsx.add(veh.id);
-                        allDevices.add(veh.asIoDevice(conf.bw,
-                                conf.max_battery_capacity,
-                                conf.battery_sensing_rate,
-                                conf.battery_sending_rate,
-                                conf.network_type,
-                                conf.protocol));
+                        if (!visitedVehicles.contains(veh.id)) {
+                            hasInsertion = true;
+                            visitedVehicles.add(veh.id);
+                            lsx.add(veh.id);
+                            allDevices.add(veh.asIoDevice(conf.bw,
+                                    conf.max_battery_capacity,
+                                    conf.battery_sensing_rate,
+                                    conf.battery_sending_rate,
+                                    conf.network_type,
+                                    conf.protocol));
+                        }
 //                        csvFile.add(new CSVOsmosisRecord(j, x, veh, conf, aMel));
                     }
-                    allDestinations.add(x.asVMEntity(conf.VM_pes, conf.VM_mips, conf.VM_ram, conf.VM_storage, conf.VM_bw, conf.VM_cloudletPolicy));
+                    if (hasInsertion)
+                        allDestinations.add(x.asVMEntity(conf.VM_pes, conf.VM_mips, conf.VM_ram, conf.VM_storage, conf.VM_bw, conf.VM_cloudletPolicy));
                 }
             }
             if (hasSomeResult) {
-                if (conf.isDo_thresholding())
+                if (conf.isDo_thresholding()) {
+
+                    Set<String> original = new HashSet<>();
+                    for (var x : inCurrentTime.get(currTime).entrySet()) {
+                        for (var y : x.getValue()) {
+                            if (original.contains(y)) {
+                                System.err.println("ERROR: "+y+ "already there!");
+                                System.exit(1);
+                            } else {
+                                original.add(y);
+                            }
+                        }
+                    }
+                    int originalSize = original.size();
+
                     simulateTraffic(inCurrentTime.get(currTime),
                             tls,
                             tlsMap,
                             conf.getMax_threshold(),
                             conf.getBest_distance());
+
+                    Set<String> lasters = new HashSet<>();
+                    for (var x : inCurrentTime.get(currTime).entrySet())
+                        lasters.addAll(x.getValue());
+                    int lastersSIze = lasters.size();
+
+                    if (originalSize != lastersSIze) {
+                        System.out.println(originalSize+" vs "+lastersSIze);
+                        System.exit(1);
+                    } else {
+                        System.out.println(originalSize +" vs "+lastersSIze);
+                    }
+                }
 //                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
 //                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
 //                String confCURR = conf.experimentName+"_t"+currTime;
@@ -383,7 +424,7 @@ public class NoOsmosis {
                         .sorted(Comparator.comparingDouble(y -> {
                             var distrOf = distributorOf.get(y.id);
                             var demandForecast = 1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))+1.0);
-                            return demandForecast * availFormula(updated, maxThreshold, semList.get(semId.get(x.getKey())), y);
+                            return  availFormula(updated, maxThreshold, semList.get(semId.get(x.getKey())), y);
                         }))
                         .collect(Collectors.groupingBy(y -> {
                             var ls = updated.get(y.id);
@@ -461,8 +502,10 @@ public class NoOsmosis {
         }
     }
 
-    public NoOsmosis() throws Exception {
-        File f = new File("sumo_configuration_file_path.yaml");
+    public NoOsmosis(String x) throws Exception {
+        System.out.println(x);
+        Thread.sleep(1000);
+        File f = new File(x);
         if (!f.exists()) {
             System.err.println("ERROR: the current folder should contain a file called 'sumo_configuration_file_path.yaml'");
             System.exit(1);
@@ -477,7 +520,7 @@ public class NoOsmosis {
     }
 
     public static void main(String[] args) throws Exception {
-        var x = new NoOsmosis();
+        var x = new NoOsmosis(args.length > 0 ? args[0] : "sumo_configuration_file_path.yaml");
         x.run();
     }
 

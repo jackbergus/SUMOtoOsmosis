@@ -20,7 +20,6 @@
 
 package uk.ncl.giacomobergami.osmosis;
 
-import com.opencsv.CSVWriter;
 import uk.ncl.giacomobergami.sumo.TrafficLightInformation;
 import uk.ncl.giacomobergami.sumo.VehicleRecord;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
