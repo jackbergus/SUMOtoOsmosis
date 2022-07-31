@@ -103,6 +103,8 @@ public class Problem {
             }
         }
 
+        // If there is only one solution to test, that is locally optimal by definition
+        if (allPossiblePairs.size() == 1) return allPossiblePairs;
         for (int i = 0; i < allPossiblePairs.size(); i++) {
             if (i % 1000 == 0) System.out.print(i+"... ");
             System.out.flush();
