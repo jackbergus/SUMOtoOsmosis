@@ -45,4 +45,13 @@ VM_cloudletPolicy: "org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
 terminate_simulation_at: 0
 max_threshold: 20
 best_distance: 500
-do_thresholding: true
+do_thresholding: yes
+use_demand_forecast: no
+use_greedy_algorithm: yes
+use_nearest_MEL_to_IoT: yes
+reduce_to_one: yes
+k1 : 1.0
+k2 : 1.0
+use_pareto_front: yes
+p1: 0.3
+p2: 0.3

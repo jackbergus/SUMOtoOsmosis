@@ -58,6 +58,85 @@ public class SimulatorConf {
     public int max_threshold;
     public int best_distance;
     public boolean do_thresholding;
+    public boolean use_demand_forecast;
+    public boolean use_greedy_algorithm;
+    public boolean use_nearest_MEL_to_IoT;
+    public boolean reduce_to_one;
+    public double k1, k2;
+    public boolean use_pareto_front;
+    public double p1, p2;
+
+    public boolean isUse_pareto_front() {
+        return use_pareto_front;
+    }
+
+    public void setUse_pareto_front(boolean use_pareto_front) {
+        this.use_pareto_front = use_pareto_front;
+    }
+
+    public double getP1() {
+        return p1;
+    }
+
+    public void setP1(double p1) {
+        this.p1 = p1;
+    }
+
+    public double getP2() {
+        return p2;
+    }
+
+    public void setP2(double p2) {
+        this.p2 = p2;
+    }
+
+    public double getK1() {
+        return k1;
+    }
+
+    public void setK1(double k1) {
+        this.k1 = k1;
+    }
+
+    public double getK2() {
+        return k2;
+    }
+
+    public void setK2(double k2) {
+        this.k2 = k2;
+    }
+
+    public boolean isReduce_to_one() {
+        return reduce_to_one;
+    }
+
+    public void setReduce_to_one(boolean reduce_to_one) {
+        this.reduce_to_one = reduce_to_one;
+    }
+
+    public boolean isUse_nearest_MEL_to_IoT() {
+        return use_nearest_MEL_to_IoT;
+    }
+
+    public void setUse_nearest_MEL_to_IoT(boolean use_nearest_MEL_to_IoT) {
+        this.use_nearest_MEL_to_IoT = use_nearest_MEL_to_IoT;
+    }
+
+    public boolean isUse_greedy_algorithm() {
+        return use_greedy_algorithm;
+    }
+
+    public void setUse_greedy_algorithm(boolean use_greedy_algorithm) {
+        this.use_greedy_algorithm = use_greedy_algorithm;
+    }
+
+    public boolean isUse_demand_forecast() {
+        return use_demand_forecast;
+    }
+
+    public void setUse_demand_forecast(boolean use_demand_forecast) {
+        this.use_demand_forecast = use_demand_forecast;
+    }
 
     public boolean isDo_thresholding() {
         return do_thresholding;

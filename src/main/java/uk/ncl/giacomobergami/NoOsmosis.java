@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.commons.lang3.tuple.Pair;
+import com.google.ortools.Loader;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import org.jblas.DoubleMatrix;
 import org.w3c.dom.Document;
@@ -35,7 +35,6 @@ import uk.ncl.giacomobergami.osmosis.CSVOsmosisRecord;
 import uk.ncl.giacomobergami.solver.Problem;
 import uk.ncl.giacomobergami.solver.RSU;
 import uk.ncl.giacomobergami.solver.Vehicle;
-import uk.ncl.giacomobergami.sumo.TrafficLightInformation;
 import uk.ncl.giacomobergami.sumo.VehicleRecord;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
@@ -107,6 +106,7 @@ public class NoOsmosis {
 
     public void dumpSumo() throws Exception {
         HashMap<Double, HashMap<RSU, List<Vehicle>>> inCurrentTime = new HashMap<>();
+        HashMap<Double, Long> problemSolvingTime = new HashMap<>();
 //        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
@@ -175,7 +175,6 @@ public class NoOsmosis {
         ArrayList<CSVOsmosisRecord> csvFile = new ArrayList<>();
         var timestamp_eval = XPathUtil.evaluateNodeList(trace_document, "/fcd-export/timestep");
         for (int i = 0, N = timestamp_eval.getLength(); i<N; i++) {
-            Set<String> visitedVehicles = new HashSet<>();
             csvFile.clear();
             var curr = timestamp_eval.item(i);
             Double currTime = Double.valueOf(curr.getAttributes().getNamedItem("time").getTextContent());
@@ -202,36 +201,44 @@ public class NoOsmosis {
             }
             if (vehs.isEmpty()) continue;
 
-            Problem solver = new Problem(vehs, tls, currTime, conf);
+            Problem solver = new Problem(vehs, tls, conf);
             List<ConfiguationEntity.IotDeviceEntity> allDevices = new ArrayList<>();
             List<ConfiguationEntity.VMEntity> allDestinations = new ArrayList<>();
 
-            if (solver.init(allDevices, allDestinations)) {
+            if (solver.init(allDevices, allDestinations)) { // also, re-setting the time benchmark
+                ArrayList<Problem.Solution> sol;
+                HashMap<RSU, List<Vehicle>> res = new HashMap<>();
                 if (conf.isDo_thresholding()) {
-                    ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> sol;
-                    boolean greedyAlgorithm = true;
-                    HashMap<RSU, List<Vehicle>> res = new HashMap<>();
-                    if (greedyAlgorithm) {
-                        solver.nearestMELForIoT();
-//                        solver.allPossibleMELForIoT();
-                        solver.greedyPossibleTargetsForIoT();
-                        sol = solver.multi_objective(1.0, 1.0, true);
+                    if (conf.use_nearest_MEL_to_IoT) {
+                        solver.setNearestMELForIoT();
                     } else {
-//                        solver.allPossibleMELForIoT();
-                        solver.nearestMELForIoT();
-                        solver.allPossibleTargetsForCommunication();
-                        sol = solver.multi_objective(1.0, 1.0, true);
+                        solver.setAllPossibleMELForIoT();
                     }
-                    for (var x : sol) {
-                        // TODO: simulation starting from the beginning
-                        for (var y : x.getValue().entrySet()) {
-                            if (!res.containsKey(y.getValue()))
-                                res.put(y.getValue(), new ArrayList<>());
-                            res.get(y.getValue()).add(y.getKey());
-                        }
+                    if (conf.use_greedy_algorithm) {
+                        solver.setGreedyPossibleTargetsForIoT(conf.use_demand_forecast);
+                    } else {
+                        solver.setAllPossibleTargetsForCommunication();
                     }
-                    inCurrentTime.put(currTime, res);
+                } else {
+                    solver.alwaysCommunicateWithTheNearestMel();
                 }
+                if (conf.use_pareto_front) {
+                    sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
+                } else {
+                    sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
+                }
+                for (var x : sol) {
+                    for (var y : x.getAlphaAssociation()) {
+                        if (!res.containsKey(y.getValue()))
+                            res.put(y.getValue(), new ArrayList<>());
+                        res.get(y.getValue()).add(y.getKey());
+                    }
+                }
+                Set<Vehicle> sv = new HashSet<>();
+                res.forEach((k, v)-> sv.addAll(v));
+                System.out.println(sv.size());
+                inCurrentTime.put(currTime, res);
+                problemSolvingTime.put(currTime, solver.getRunTime());
 
 
 //                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
@@ -279,6 +286,19 @@ public class NoOsmosis {
 //            b2.close();
 //            batt.close();
 //        }
+
+        {
+            FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_time_benchmark.csv").toFile());
+            BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
+            flsF2.write("sim_time,bench_time");
+            flsF2.newLine();
+            for (var x : problemSolvingTime.entrySet()) {
+                flsF2.write(x.getKey()+","+x.getValue());
+                flsF2.newLine();
+            }
+            flsF2.close();
+            tlsF.close();
+        }
 
         {
             FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tls.csv").toFile());
@@ -353,6 +373,7 @@ public class NoOsmosis {
     }
 
     public static void main(String[] args) throws Exception {
+        Loader.loadNativeLibraries();
         var x = new NoOsmosis(args.length > 0 ? args[0] : "sumo_configuration_file_path.yaml");
         x.run();
     }
