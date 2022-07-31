@@ -58,13 +58,31 @@ public class SimulatorConf {
     public int max_threshold;
     public int best_distance;
     public boolean do_thresholding;
-    public boolean use_demand_forecast;
+    public boolean use_local_demand_forecast;
     public boolean use_greedy_algorithm;
     public boolean use_nearest_MEL_to_IoT;
     public boolean reduce_to_one;
     public double k1, k2;
     public boolean use_pareto_front;
     public double p1, p2;
+    public int use_top_k_nearest_targets;
+    public boolean use_top_k_nearest_targets_randomOne;
+
+    public boolean isUse_top_k_nearest_targets_randomOne() {
+        return use_top_k_nearest_targets_randomOne;
+    }
+
+    public void setUse_top_k_nearest_targets_randomOne(boolean use_top_k_nearest_targets_randomOne) {
+        this.use_top_k_nearest_targets_randomOne = use_top_k_nearest_targets_randomOne;
+    }
+
+    public int getUse_top_k_nearest_targets() {
+        return use_top_k_nearest_targets;
+    }
+
+    public void setUse_top_k_nearest_targets(int use_top_k_nearest_targets) {
+        this.use_top_k_nearest_targets = use_top_k_nearest_targets;
+    }
 
     public boolean isUse_pareto_front() {
         return use_pareto_front;
@@ -130,12 +148,12 @@ public class SimulatorConf {
         this.use_greedy_algorithm = use_greedy_algorithm;
     }
 
-    public boolean isUse_demand_forecast() {
-        return use_demand_forecast;
+    public boolean isUse_local_demand_forecast() {
+        return use_local_demand_forecast;
     }
 
-    public void setUse_demand_forecast(boolean use_demand_forecast) {
-        this.use_demand_forecast = use_demand_forecast;
+    public void setUse_local_demand_forecast(boolean use_local_demand_forecast) {
+        this.use_local_demand_forecast = use_local_demand_forecast;
     }
 
     public boolean isDo_thresholding() {

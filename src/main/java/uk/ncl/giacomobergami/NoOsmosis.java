@@ -206,6 +206,7 @@ public class NoOsmosis {
             List<ConfiguationEntity.VMEntity> allDestinations = new ArrayList<>();
 
             if (solver.init(allDevices, allDestinations)) { // also, re-setting the time benchmark
+                int expectedTotalVehs = allDevices.size();
                 ArrayList<Problem.Solution> sol;
                 HashMap<RSU, List<Vehicle>> res = new HashMap<>();
                 if (conf.isDo_thresholding()) {
@@ -215,8 +216,10 @@ public class NoOsmosis {
                         solver.setAllPossibleMELForIoT();
                     }
                     if (conf.use_greedy_algorithm) {
-                        solver.setGreedyPossibleTargetsForIoT(conf.use_demand_forecast);
-                    } else {
+                        solver.setGreedyPossibleTargetsForIoT(conf.use_local_demand_forecast);
+                    } else if (conf.use_top_k_nearest_targets > 0) {
+                        solver.setAllPossibleNearestKTargetsForCommunication(conf.use_top_k_nearest_targets, conf.use_top_k_nearest_targets_randomOne);
+                    }  else {
                         solver.setAllPossibleTargetsForCommunication();
                     }
                 } else {
@@ -236,7 +239,33 @@ public class NoOsmosis {
                 }
                 Set<Vehicle> sv = new HashSet<>();
                 res.forEach((k, v)-> sv.addAll(v));
-                System.out.println(sv.size());
+                System.out.println(sv.size()+" vs. "+expectedTotalVehs);
+                if (sv.size() != expectedTotalVehs) {
+                    expectedTotalVehs = allDevices.size();
+                    res = new HashMap<>();
+                    if (conf.isDo_thresholding()) {
+                        if (conf.use_nearest_MEL_to_IoT) {
+                            solver.setNearestMELForIoT();
+                        } else {
+                            solver.setAllPossibleMELForIoT();
+                        }
+                        if (conf.use_greedy_algorithm) {
+                            solver.setGreedyPossibleTargetsForIoT(conf.use_local_demand_forecast);
+                        } else if (conf.use_top_k_nearest_targets > 0) {
+                            solver.setAllPossibleNearestKTargetsForCommunication(conf.use_top_k_nearest_targets, conf.use_top_k_nearest_targets_randomOne);
+                        }  else {
+                            solver.setAllPossibleTargetsForCommunication();
+                        }
+                    } else {
+                        solver.alwaysCommunicateWithTheNearestMel();
+                    }
+                    if (conf.use_pareto_front) {
+                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
+                    } else {
+                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
+                    }
+                    throw new RuntimeException(sv.size()+" vs. "+expectedTotalVehs);
+                }
                 inCurrentTime.put(currTime, res);
                 problemSolvingTime.put(currTime, solver.getRunTime());
 

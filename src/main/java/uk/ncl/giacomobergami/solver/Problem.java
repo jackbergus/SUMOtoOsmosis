@@ -6,12 +6,15 @@ import com.google.common.collect.Multimap;
 import com.google.ortools.sat.*;
 import io.jenetics.ext.moea.Pareto;
 import io.jenetics.ext.moea.ParetoFront;
+import it.unimi.dsi.fastutil.doubles.DoubleComparator;
+import it.unimi.dsi.fastutil.doubles.DoubleComparators;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Problem {
@@ -41,20 +44,24 @@ public class Problem {
 //        model = new CpModel();
     }
 
-    protected List<Map<Vehicle, RSU>> allThePossibleAssociations(Map<Vehicle, List<RSU>> lists) {
-        List<Map<Vehicle, RSU>> resultLists = new ArrayList<>();
+    protected Set<Map<Vehicle, RSU>> allThePossibleAssociations(Map<Vehicle, List<RSU>> lists) {
+        Set<Map<Vehicle, RSU>> resultLists = new HashSet<>();
         if (lists.size() == 0) {
             resultLists.add(Collections.emptyMap());
             return resultLists;
         } else {
             Vehicle current = lists.keySet().iterator().next();
             var firstList = lists.remove(current);
-            List<Map<Vehicle, RSU>> remainingLists = allThePossibleAssociations(lists);
-            for (RSU condition : firstList) {
-                for (Map<Vehicle, RSU> remainingList : remainingLists) {
-                    var resultList = new HashMap<>(remainingList);
-                    resultList.put(current, condition);
-                    resultLists.add(resultList);
+            if (firstList.isEmpty()) {
+                return allThePossibleAssociations(lists);
+            } else {
+                Set<Map<Vehicle, RSU>> remainingLists = allThePossibleAssociations(lists);
+                for (RSU condition : firstList) {
+                    for (Map<Vehicle, RSU> remainingList : remainingLists) {
+                        var resultList = new HashMap<>(remainingList);
+                        resultList.put(current, condition);
+                        resultLists.add(resultList);
+                    }
                 }
             }
         }
@@ -364,22 +371,22 @@ public class Problem {
      */
     public void setNearestMELForIoT() {
          long startTime = System.currentTimeMillis();
-         firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList())));
+         firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
          run_time += (System.currentTimeMillis() - startTime);
     }
 
     public void alwaysCommunicateWithTheNearestMel() {
         long startTime = System.currentTimeMillis();
-        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList())));
+        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
         targetCommunication = new ArrayList<>(firstMileCommunication);
         run_time += (System.currentTimeMillis() - startTime);
     }
 
     public void nearestFurthestRandomMELForIoT() {
         long startTime = System.currentTimeMillis();
-        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> rd.nextBoolean() ?
+        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> rd.nextBoolean() ?
                 x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList():
-                x.getValue().stream().max(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList())));
+                x.getValue().stream().max(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
         run_time += (System.currentTimeMillis() - startTime);
     }
 
@@ -389,7 +396,8 @@ public class Problem {
     public void setAllPossibleMELForIoT() {
         long startTime = System.currentTimeMillis();
         firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream()
-                .collect(Collectors.<Map.Entry<Vehicle, ArrayList<RSU>>,Vehicle,List<RSU>>toMap(Map.Entry::getKey, e -> List.copyOf(e.getValue()))));
+                .filter(e ->!e.getValue().isEmpty())
+                .collect(Collectors.<Map.Entry<Vehicle, ArrayList<RSU>>,Vehicle,List<RSU>>toMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())))).stream().toList();
         run_time += (System.currentTimeMillis() - startTime);
     }
 
@@ -397,7 +405,7 @@ public class Problem {
      * Exploits a greedy algorithm for associating each IoT device a single MEL with which
      * establish a communication
      */
-    public void setGreedyPossibleTargetsForIoT(boolean useDemandForecast) {
+    public void setGreedyPossibleTargetsForIoT(boolean useLocalDemandForecast) {
         long startTime = System.currentTimeMillis();
         Map<Vehicle, List<RSU>> result = new HashMap<>();
         for (var map : firstMileCommunication) {
@@ -408,9 +416,9 @@ public class Problem {
                 }
                 stringListHashMap.get(cp.getValue()).add(cp.getKey());
             }
-            trafficGreedyHeuristic(stringListHashMap, rsus, result, useDemandForecast);
+            trafficGreedyHeuristic(stringListHashMap, rsus, result, useLocalDemandForecast);
         }
-        targetCommunication = allThePossibleAssociations(result);
+        targetCommunication = allThePossibleAssociations(result).stream().toList();
         run_time += (System.currentTimeMillis() - startTime);
     }
 
@@ -418,7 +426,7 @@ public class Problem {
     private void trafficGreedyHeuristic(HashMap<RSU, List<Vehicle>> stringListHashMap,
                                         List<RSU> semList,
                                         Map<Vehicle, List<RSU>> result,
-                                        boolean useDemandForecast
+                                        boolean useLocalDemandForecast
     ) {
         if (stringListHashMap == null) return;
         HashMap<RSU, List<Vehicle>> updated =  new HashMap<>();
@@ -438,15 +446,20 @@ public class Problem {
         HashMap<RSU, Set<Vehicle>> busyRSUs = new HashMap<>();
         Set<Vehicle> vehsWithBusyRSUs = new HashSet<>(); // Vehicles that might fall off from an association
         Set<Vehicle> allVehs = new HashSet<>(); // Vehicles already associated to a semaphore
+        int minForSem = Integer.MAX_VALUE, maxForSem = 0;
         for (var sem : sortedRSUs) {
             var vehs = updated.get(sem);
-            if ((vehs == null) || vehs.size() < sem.max_vehicle_communication) break;
-            var LS = vehs.subList((int)sem.max_vehicle_communication-1, vehs.size());
+            int vehSize = vehs == null ? 0 : vehs.size();
+            if (minForSem > vehSize) minForSem = vehSize;
+            if (maxForSem < vehSize) maxForSem = vehSize;
+            if ((vehs == null) || vehSize < sem.max_vehicle_communication) break;
+            var LS = vehs.subList((int)sem.max_vehicle_communication-1, vehSize);
             vehsWithBusyRSUs.addAll(LS);
             busyRSUs.put(sem, new HashSet<>(LS));
             vehs.removeAll(LS);
             allVehs.addAll(vehs);
         }
+        int averageOcccupacy = (int)Math.round(((double) minForSem)+((double) maxForSem)/2.0);
 
         // Removing the stray vehicles that are already associated to a good semaphore
         vehsWithBusyRSUs.removeAll(allVehs);
@@ -486,7 +499,7 @@ public class Problem {
                         // the better. Sorting the candidates accordingly.
                         .sorted(Comparator.comparingDouble((RSU candidateRSU) -> {
                             double demandForecast = 1.0;
-                            if (useDemandForecast) {
+                            if (useLocalDemandForecast) {
                                 var distrOf = distributorOf.get(candidateRSU);
 //                                demandForecast = Math.exp(1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))/candidateRSU.max_vehicle_communication+1.0));
                                 demandForecast = Math.pow(0.5, (distrOf == null ? 0 : distrOf.size()));
@@ -497,16 +510,16 @@ public class Problem {
                         // Last, splitting the semaphores into free and overloaded and within the desired communication radius
                         .collect(Collectors.groupingBy(candidateRSU -> {
                             boolean isFree = true;
-//                            if (useDemandForecast) {
-//                                var distrOf = distributorOf.get(candidateRSU);
-//                                isFree = distrOf.size() <= candidateRSU.max_vehicle_communication;
-//                            }
+                            if (useLocalDemandForecast) {
+                                var distrOf = updated.get(candidateRSU);
+                                isFree = (distrOf == null) || (distrOf.size() <= candidateRSU.max_vehicle_communication);
+                            }
                             var ls = updated.get(candidateRSU);
                             var sem = busyRSUToCandidates.getKey();
                             double xDistX = (candidateRSU.x - sem.x),
                                     xDistY = (candidateRSU.y - sem.y);
                             double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
-                            return ((ls == null ? 0 : ls.size()) < candidateRSU.max_vehicle_communication) &&
+                            return ((ls == null ? 0 : ls.size()) < (useLocalDemandForecast ? candidateRSU.max_vehicle_communication : averageOcccupacy)) &&
                                     (xDistSq < (candidateRSU.communication_radius * candidateRSU.communication_radius)) &&
                                     isFree;
                         }));
@@ -596,7 +609,64 @@ public class Problem {
      */
     public void setAllPossibleTargetsForCommunication() {
         long start = System.currentTimeMillis();
-        targetCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.keySet().stream().collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e->List.copyOf(rsus))));
+        targetCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.keySet().stream().filter(e -> !vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()).collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e->List.copyOf(rsus)))).stream().toList();
         run_time += (System.currentTimeMillis() - start);
     }
+
+    public void setAllPossibleNearestKTargetsForCommunication(int k, boolean randomOne) {
+        long start = System.currentTimeMillis();
+        targetCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.keySet().stream().filter(e -> !vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()).collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e-> {
+            Function<RSU, Double> fun = o -> f.getDistance(o, e);
+            Comparator<RSU> comparator = Comparator.comparingDouble(fun::apply);
+            PriorityQueue<RSU> pq = new PriorityQueue<>(k, comparator);
+            int added = 0;
+            for (int i = 0; i < rsus.size(); i++) {
+                if (fun.apply(rsus.get(i)) > rsus.get(i).communication_radius * rsus.get(i).communication_radius) continue;
+                if (added < k) // add until heap is filled with k elements.
+                { pq.add(rsus.get(i)); added++; }
+                else if (comparator.compare(pq.peek(), rsus.get(i)) < 0) { // check if it's bigger than the
+                    // smallest element in the heap.
+                    pq.poll();
+                    pq.add(rsus.get(i));
+                }
+            }
+            if (randomOne) {
+                ArrayList<RSU> ls = new ArrayList<>();
+                for (int i = 0; i<k && pq.size() > 1; i++)
+                    pq.poll();
+                if (!pq.isEmpty()) {
+                    ls.add(pq.peek());
+                }
+                if (ls.size() == 0) {
+
+                    throw new RuntimeException(vehicles_communicating_with_nearest_RSUs.get(e).size()+"");
+                }
+                return ls;
+            } else {
+                if (pq.isEmpty()) {
+                    if (!vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()) {
+                        for (int i = 0; i < rsus.size(); i++) {
+                        if (vehicles_communicating_with_nearest_RSUs.get(e).contains(rsus.get(i))) {
+                            var val = fun.apply(rsus.get(i));
+                            var cmp = rsus.get(i).max_vehicle_communication * rsus.get(i).max_vehicle_communication;
+                            throw new RuntimeException(rsus.get(i)+"");
+                        }
+                        if (fun.apply(rsus.get(i)) > rsus.get(i).max_vehicle_communication) continue;
+                        if (i < k) // add until heap is filled with k elements.
+                            pq.add(rsus.get(i));
+                        else if (comparator.compare(pq.peek(), rsus.get(i)) < 0) { // check if it's bigger than the
+                            // smallest element in the heap.
+                            pq.poll();
+                            pq.add(rsus.get(i));
+                        }
+                    }
+                        throw new RuntimeException("ERROR!");
+                    }
+                }
+                return new ArrayList<>(pq);
+            }
+        }))).stream().toList();
+        run_time += (System.currentTimeMillis() - start);
+    }
+
 }
