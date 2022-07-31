@@ -22,16 +22,19 @@
 
 package uk.ncl.giacomobergami;
 
-import com.eatthepath.jvptree.VPTree;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import org.jblas.DoubleMatrix;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import uk.ncl.giacomobergami.osmosis.CSVOsmosisRecord;
+import uk.ncl.giacomobergami.solver.Problem;
+import uk.ncl.giacomobergami.solver.RSU;
+import uk.ncl.giacomobergami.solver.Vehicle;
 import uk.ncl.giacomobergami.sumo.TrafficLightInformation;
 import uk.ncl.giacomobergami.sumo.VehicleRecord;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
@@ -103,7 +106,7 @@ public class NoOsmosis {
     }
 
     public void dumpSumo() throws Exception {
-        HashMap<Double, HashMap<String, List<String>>> inCurrentTime = new HashMap<>();
+        HashMap<Double, HashMap<RSU, List<Vehicle>>> inCurrentTime = new HashMap<>();
 //        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
         File folderOut = new File(conf.OsmosisConfFiles);
@@ -136,17 +139,18 @@ public class NoOsmosis {
         }
         System.out.println("Loading the traffic light information...");
         Document networkFile = db.parse(network_python);
-        ArrayList<TrafficLightInformation> tls = new ArrayList<>();
-        HashMap<String, Integer> tlsMap = new HashMap<>();
+        ArrayList<RSU> tls = new ArrayList<>();
+//        HashMap<String, Integer> tlsMap = new HashMap<>();
         var traffic_lights = XPathUtil.evaluateNodeList(networkFile, "/net/junction[@type='traffic_light']");
         for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
             var curr = traffic_lights.item(i).getAttributes();
-            TrafficLightInformation tlInfo = new TrafficLightInformation();
-            tlInfo.id = curr.getNamedItem("id").getTextContent();
-            tlInfo.x = Double.parseDouble(curr.getNamedItem("x").getTextContent());
-            tlInfo.y = Double.parseDouble(curr.getNamedItem("y").getTextContent());
+            RSU tlInfo = new RSU(curr.getNamedItem("id").getTextContent(),
+                    Double.parseDouble(curr.getNamedItem("x").getTextContent()),
+                            Double.parseDouble(curr.getNamedItem("y").getTextContent()),
+                                    conf.best_distance,
+                    conf.max_threshold);
             tls.add(tlInfo);
-            tlsMap.put(tlInfo.id, i);
+//            tlsMap.put(tlInfo.id, i);
         }
         DoubleMatrix sqDistanceMatrix = DoubleMatrix.zeros(traffic_lights.getLength(),traffic_lights.getLength());
         for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
@@ -177,7 +181,7 @@ public class NoOsmosis {
             Double currTime = Double.valueOf(curr.getAttributes().getNamedItem("time").getTextContent());
             System.out.println(currTime);
             var tag = timestamp_eval.item(i).getChildNodes();
-            ArrayList<VehicleRecord> vehs = new ArrayList<>(tag.getLength());
+            ArrayList<Vehicle> vehs = new ArrayList<>(tag.getLength());
             for (int j = 0, M = tag.getLength(); j<M; j++) {
                 var veh = tag.item(j);
                 if (veh.getNodeType()== Node.ELEMENT_NODE) {
@@ -197,71 +201,39 @@ public class NoOsmosis {
                 }
             }
             if (vehs.isEmpty()) continue;
-            var tree = new VPTree<>(f, vehs);
+
+            Problem solver = new Problem(vehs, tls, currTime, conf);
             List<ConfiguationEntity.IotDeviceEntity> allDevices = new ArrayList<>();
             List<ConfiguationEntity.VMEntity> allDestinations = new ArrayList<>();
-            boolean hasSomeResult = false;
-            for (int j = 0, M = tls.size(); j < M; j++) {
-                TrafficLightInformation x = tls.get(j);
-                var distanceQueryResult = tree.getAllWithinDistance(x, distanceSquared);
-                if (!distanceQueryResult.isEmpty()) {
-                    hasSomeResult = true;
-                    inCurrentTime.putIfAbsent(currTime, new HashMap<>());
-                    var lsx = new ArrayList<String>();
-                    inCurrentTime.get(currTime).put(x.id, lsx);
-                    boolean hasInsertion = false;
-                    for (var veh : distanceQueryResult) {
-                        if (!visitedVehicles.contains(veh.id)) {
-                            hasInsertion = true;
-                            visitedVehicles.add(veh.id);
-                            lsx.add(veh.id);
-                            allDevices.add(veh.asIoDevice(conf.bw,
-                                    conf.max_battery_capacity,
-                                    conf.battery_sensing_rate,
-                                    conf.battery_sending_rate,
-                                    conf.network_type,
-                                    conf.protocol));
-                        }
-//                        csvFile.add(new CSVOsmosisRecord(j, x, veh, conf, aMel));
-                    }
-                    if (hasInsertion)
-                        allDestinations.add(x.asVMEntity(conf.VM_pes, conf.VM_mips, conf.VM_ram, conf.VM_storage, conf.VM_bw, conf.VM_cloudletPolicy));
-                }
-            }
-            if (hasSomeResult) {
+
+            if (solver.init(allDevices, allDestinations)) {
                 if (conf.isDo_thresholding()) {
-
-                    Set<String> original = new HashSet<>();
-                    for (var x : inCurrentTime.get(currTime).entrySet()) {
-                        for (var y : x.getValue()) {
-                            if (original.contains(y)) {
-                                System.err.println("ERROR: "+y+ "already there!");
-                                System.exit(1);
-                            } else {
-                                original.add(y);
-                            }
+                    ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> sol;
+                    boolean greedyAlgorithm = true;
+                    HashMap<RSU, List<Vehicle>> res = new HashMap<>();
+                    if (greedyAlgorithm) {
+                        solver.nearestMELForIoT();
+//                        solver.allPossibleMELForIoT();
+                        solver.greedyPossibleTargetsForIoT();
+                        sol = solver.multi_objective(1.0, 1.0);
+                    } else {
+//                        solver.allPossibleMELForIoT();
+                        solver.nearestMELForIoT();
+                        solver.allPossibleTargetsForCommunication();
+                        sol = solver.multi_objective(1.0, 1.0);
+                    }
+                    for (var x : sol) {
+                        // TODO: simulation starting from the beginning
+                        for (var y : x.getValue().entrySet()) {
+                            if (!res.containsKey(y.getValue()))
+                                res.put(y.getValue(), new ArrayList<>());
+                            res.get(y.getValue()).add(y.getKey());
                         }
                     }
-                    int originalSize = original.size();
-
-                    simulateTraffic(inCurrentTime.get(currTime),
-                            tls,
-                            tlsMap,
-                            conf.getMax_threshold(),
-                            conf.getBest_distance());
-
-                    Set<String> lasters = new HashSet<>();
-                    for (var x : inCurrentTime.get(currTime).entrySet())
-                        lasters.addAll(x.getValue());
-                    int lastersSIze = lasters.size();
-
-                    if (originalSize != lastersSIze) {
-                        System.out.println(originalSize+" vs "+lastersSIze);
-                        System.exit(1);
-                    } else {
-                        System.out.println(originalSize +" vs "+lastersSIze);
-                    }
+                    inCurrentTime.put(currTime, res);
                 }
+
+
 //                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
 //                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
 //                String confCURR = conf.experimentName+"_t"+currTime;
@@ -337,11 +309,11 @@ public class NoOsmosis {
             BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
             flsF2.write("SimTime,Sem,NVehs");
             flsF2.newLine();
-            List<String> e = Collections.emptyList();
+            List<Vehicle> e = Collections.emptyList();
             for (var cp : inCurrentTime.entrySet()) {
                 Double time = cp.getKey();
                 for (var sem : tls) {
-                    flsF2.write(time+","+sem.id+","+cp.getValue().getOrDefault(sem.id, e).size());
+                    flsF2.write(time+","+sem.id+","+cp.getValue().getOrDefault(sem, e).size());
                     flsF2.newLine();
                 }
             }
@@ -350,145 +322,6 @@ public class NoOsmosis {
         }
     }
 
-    private void simulateTraffic(HashMap<String, List<String>> stringListHashMap,
-                                 ArrayList<TrafficLightInformation> semList,
-                                 HashMap<String, Integer> semId,
-                                 final int maxThreshold,
-                                 int best_distance) {
-        if (stringListHashMap == null) return;
-        HashMap<String, List<String>> updated =  new HashMap<>();
-        stringListHashMap.forEach((x,y)-> updated.put(x, new ArrayList<>(y)));
-        int bestSqDistance = best_distance * best_distance;
-
-        Comparator<TrafficLightInformation> IntCmp = Comparator.comparingInt(z -> {
-            var x = updated.get(z.id);
-            return  (x == null) ? 0 : x.size();
-        });
-
-        // Sorting the semaphores by the most critical ones
-        List<TrafficLightInformation> sortedSemaphores = semList.stream()
-                .sorted(IntCmp.reversed())
-                .collect(Collectors.toList());
-
-        HashMap<String, Set<String>> strayVehFrom = new HashMap<>();
-        Set<String> strayVehs = new HashSet<>(); // Vehicles that might fall off from an association
-        Set<String> allVehs = new HashSet<>(); // Vehicles already associated to a semaphore
-        for (var sem : sortedSemaphores) {
-            var semIdX = semId.get(sem.id);
-            var vehs = updated.get(sem.id);
-            if ((vehs == null) || vehs.size() < maxThreshold) break;
-
-            var LS = vehs.subList(maxThreshold-1, vehs.size());
-            strayVehs.addAll(LS);
-            strayVehFrom.put(sem.id, new HashSet<>(LS));
-            vehs.removeAll(LS);
-            allVehs.addAll(vehs);
-        }
-
-        // Removing the stray vehicles that are already associated to a good semaphore
-        strayVehs.removeAll(allVehs);
-        strayVehFrom.forEach((k,v) -> v.removeAll(allVehs));
-        strayVehFrom.entrySet().stream().filter(cp-> cp.getValue().isEmpty())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList())
-                .forEach(strayVehFrom::remove);
-
-        // Vehicles to get re-allocated
-        HashMap<String, Set<String>> distributorOf = new HashMap<>();
-        HashMap<String, List<TrafficLightInformation>> personalDistributors = new HashMap<>();
-        if (!strayVehs.isEmpty()) {
-
-            // Determining which semaphores will be affected by over-demands by busy semaphores
-            for (var sem : strayVehFrom.keySet()) {
-                // A valid distributor is a semaphore which is not currently full
-                var distributor = semList.stream()
-                        .filter(x -> {
-                            var ls = updated.get(x.id);
-                            return (!x.id.equals(sem)) && ((ls == null ? 0 : ls.size()) < maxThreshold);
-                        })
-                        .collect(Collectors.toList());
-                for (var cp2 : distributor) {
-                    if (!distributorOf.containsKey(cp2.id))
-                        distributorOf.put(cp2.id, new HashSet<>());
-                    distributorOf.get(cp2.id).add(sem);
-                }
-                personalDistributors.put(sem, distributor);
-            }
-
-            for (var x : personalDistributors.entrySet()) {
-                // The more the semaphores are near to x, the more the space left, and the less
-                // the requests that the semaphore might receive from the siblings, the better
-                // Sorting the candidates accordingly.
-                // Last, splitting the semaphores into free and overloaded.
-                var map = x.getValue().stream()
-                        .sorted(Comparator.comparingDouble(y -> {
-                            var distrOf = distributorOf.get(y.id);
-                            var demandForecast = 1.0 / (((double) (distrOf == null ? 0 : distrOf.size()))+1.0);
-                            return  availFormula(updated, maxThreshold, semList.get(semId.get(x.getKey())), y);
-                        }))
-                        .collect(Collectors.groupingBy(y -> {
-                            var ls = updated.get(y.id);
-                            var sem = semList.get(semId.get(x.getKey()));
-                            double xDistX = (y.x - sem.x),
-                                    xDistY = (y.y - sem.y);
-                            double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
-                            return ((ls == null ? 0 : ls.size()) < maxThreshold) && (xDistSq < bestSqDistance);
-                        }));
-                var locVehs = new ArrayList<>(strayVehFrom.get(x.getKey()));
-                int i = 0, N = locVehs.size();
-
-                Set<TrafficLightInformation> okTL = new HashSet<>(), stopIL = new HashSet<>();
-                var mapOk =  map.get(true);
-                if (mapOk != null) okTL.addAll(mapOk);
-                mapOk = map.get(false);
-                if (mapOk != null)
-                    stopIL.addAll(mapOk);
-
-                // Simulating an uniform distribution among the available elements.
-                // Then, stopping as soon as they get full
-                while (!okTL.isEmpty()) {
-                    // Continuing to allocate vehicles until there is something left
-                    if (i>=N) break;
-                    for (var sem : okTL) {
-                        if (i>=N) break;
-                        updated.putIfAbsent(sem.id, new ArrayList<>());
-                        if (updated.get(sem.id).size() > maxThreshold) {
-                            stopIL.add(sem);
-                        } else {
-                            updated.get(sem.id).add(locVehs.get(i++));
-                        }
-                    }
-                    okTL.removeAll(stopIL);
-                }
-
-                // Uniformly re-distribuiting the load among the other remaining semaphores
-                while (i<N) {
-                    for (var sem : stopIL) {
-                        if (i>=N) break;
-                        updated.putIfAbsent(sem.id, new ArrayList<>());
-                        updated.get(sem.id).add(locVehs.get(i++));
-                    }
-                }
-            }
-
-            stringListHashMap.putAll(updated);
-        }
-    }
-
-    private double availFormula(HashMap<String, List<String>> stringListHashMap, int maxThreshold, TrafficLightInformation sem, TrafficLightInformation x) {
-        var ls = stringListHashMap.get(x.id);
-        double xAvail = maxThreshold - (ls == null ? 0 : ls.size());
-        if (Math.abs(xAvail)>=Double.MIN_NORMAL) {
-            double absAvail = Math.abs(xAvail);
-            double xDistX = (x.x - sem.x),
-                    xDistY = (x.y - sem.y);
-            double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
-            xDistSq = xDistSq / (xDistSq+1); // normalization
-            return Math.signum(xAvail) * (absAvail / (absAvail + 1)) * xDistSq;
-        } else {
-            return 0.0;
-        }
-    }
 
     public void run() {
         if (!hasRun) {

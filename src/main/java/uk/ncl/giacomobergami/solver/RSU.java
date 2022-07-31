@@ -4,8 +4,8 @@ import uk.ncl.giacomobergami.sumo.TrafficLightInformation;
 import java.util.Objects;
 
 public class RSU extends TrafficLightInformation {
-    double communication_radius;
-    double max_vehicle_communication;
+    public double communication_radius;
+    public double max_vehicle_communication;
 
     public RSU(String id, double x, double y, double communication_radius,
                double max_vehicle_communication) {
