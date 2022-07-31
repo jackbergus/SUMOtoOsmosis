@@ -215,12 +215,12 @@ public class NoOsmosis {
                         solver.nearestMELForIoT();
 //                        solver.allPossibleMELForIoT();
                         solver.greedyPossibleTargetsForIoT();
-                        sol = solver.multi_objective(1.0, 1.0);
+                        sol = solver.multi_objective(1.0, 1.0, true);
                     } else {
 //                        solver.allPossibleMELForIoT();
                         solver.nearestMELForIoT();
                         solver.allPossibleTargetsForCommunication();
-                        sol = solver.multi_objective(1.0, 1.0);
+                        sol = solver.multi_objective(1.0, 1.0, true);
                     }
                     for (var x : sol) {
                         // TODO: simulation starting from the beginning

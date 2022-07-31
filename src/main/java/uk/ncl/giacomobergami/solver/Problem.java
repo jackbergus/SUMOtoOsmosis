@@ -57,27 +57,27 @@ public class Problem {
         return resultLists;
     }
 
-    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2) {
-        return multi_objective(k1, k2, true, Pareto::dominance);
+    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean reduceToOne) {
+        return multi_objective(k1, k2, true, Pareto::dominance, reduceToOne);
     }
 
-    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, double pi1, double pi2) {
-        return multi_objective(k1, k2, true, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)));
+    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, double pi1, double pi2, boolean reduceToOne) {
+        return multi_objective(k1, k2, true, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne);
     }
 
-    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean ignoreCubic) {
-        return multi_objective(k1, k2, ignoreCubic, Pareto::dominance);
+    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean ignoreCubic, boolean reduceToOne) {
+        return multi_objective(k1, k2, ignoreCubic, Pareto::dominance, reduceToOne);
     }
 
-    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean ignoreCubic, double pi1, double pi2) {
-        return multi_objective(k1, k2, ignoreCubic, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)));
+    public ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean ignoreCubic, double pi1, double pi2, boolean reduceToOne) {
+        return multi_objective(k1, k2, ignoreCubic, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne);
     }
 
     /**
      * Returning all of the candidate belonging to the pareto solution
      * @return
      */
-    private ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean ignoreCubic, Comparator<double[]> dominance) {
+    private ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> multi_objective(double k1, double k2, boolean ignoreCubic, Comparator<double[]> dominance, boolean reduceToOne) {
         final ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> solution = new ArrayList<>();
         final ArrayList<double[]> all = new ArrayList<>();
         final ArrayList<Pair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> allPossiblePairs = new ArrayList<>();
@@ -210,9 +210,16 @@ public class Problem {
         final ParetoFront<double[]> front = new ParetoFront<>(dominance);
         System.out.println("\nParetoing...\n");
         front.addAll(all);
+        double prev[] = new double[]{Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE};
         for (int i = 0, N = all.size(); i<N; i++) {
-            if (front.contains(all.get(i))) {
-                solution.add(allPossiblePairs.get(i));
+            var v = all.get(i);
+            if (front.contains(v)) {
+                if (solution.isEmpty() || (!reduceToOne))
+                    solution.add(allPossiblePairs.get(i));
+                else if (prev[0] >= v[0] && prev[1] >= v[1] && prev[2] >= v[2]) {
+                    solution.set(0, allPossiblePairs.get(i));
+                    prev = v;
+                }
             }
         }
         System.out.println("Solution found: " + solution.size() + " over " + all.size());
