@@ -67,8 +67,24 @@ public class SimulatorConf {
     public double p1, p2;
     public int use_top_k_nearest_targets;
     public boolean use_top_k_nearest_targets_randomOne;
-    public boolean update_after_flow;
+    public boolean update_after_flow, ignore_cubic, clairvoyance;
     public double removal, addition;
+
+    public boolean isClairvoyance() {
+        return clairvoyance;
+    }
+
+    public void setClairvoyance(boolean clairvoyance) {
+        this.clairvoyance = clairvoyance;
+    }
+
+    public boolean isIgnore_cubic() {
+        return ignore_cubic;
+    }
+
+    public void setIgnore_cubic(boolean ignore_cubic) {
+        this.ignore_cubic = ignore_cubic;
+    }
 
     public double getRemoval() {
         return removal;

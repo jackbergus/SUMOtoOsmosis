@@ -45,6 +45,7 @@ terminate_simulation_at: 0
 max_threshold: 20
 best_distance: 500
 do_thresholding: yes
+ignore_cubic: yes
 use_local_demand_forecast: no
 use_top_k_nearest_targets: 3
 use_top_k_nearest_targets_randomOne: no
@@ -59,3 +60,4 @@ p1: 0.3
 p2: 0.3
 removal: 1.0
 addition: 1.0
+clairvoyance: no

@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class Problem {
+public class LocalTimeOptimizationProblem {
     public List<Vehicle> vehicles;
     public List<RSU>     rsus;
     private final SimulatorConf conf;
@@ -28,9 +28,9 @@ public class Problem {
     Random rd;
     long run_time;
 
-    public Problem(List<Vehicle> vehicles,
-                   List<RSU> rsus,
-                   final SimulatorConf conf) {
+    public LocalTimeOptimizationProblem(List<Vehicle> vehicles,
+                                        List<RSU> rsus,
+                                        final SimulatorConf conf) {
         this.vehicles = vehicles;
         this.rsus = rsus;
         this.conf = conf;
@@ -41,21 +41,21 @@ public class Problem {
         rd = new Random();
     }
 
-    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, true, Pareto::dominance, reduceToOne, conf.update_after_flow);
-    }
-
-    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, double pi1, double pi2, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, true, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne, conf.update_after_flow);
-    }
-
-    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean ignoreCubic, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, ignoreCubic, Pareto::dominance, reduceToOne, conf.update_after_flow);
-    }
-
-    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean ignoreCubic, double pi1, double pi2, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, ignoreCubic, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne, conf.update_after_flow);
-    }
+//    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean reduceToOne) {
+//        return multi_objective_pareto(k1, k2, true, Pareto::dominance, reduceToOne, conf.update_after_flow);
+//    }
+//
+//    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, double pi1, double pi2, boolean reduceToOne) {
+//        return multi_objective_pareto(k1, k2, true, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne, conf.update_after_flow);
+//    }
+//
+//    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean ignoreCubic, boolean reduceToOne) {
+//        return multi_objective_pareto(k1, k2, ignoreCubic, Pareto::dominance, reduceToOne, conf.update_after_flow);
+//    }
+//
+//    public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean ignoreCubic, double pi1, double pi2, boolean reduceToOne) {
+//        return multi_objective_pareto(k1, k2, ignoreCubic, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne, conf.update_after_flow);
+//    }
 
 
     public class Solution {
@@ -121,7 +121,7 @@ public class Problem {
      * Returning all of the candidate belonging to the pareto solution
      * @return
      */
-    private ArrayList<Solution> multi_objective_pareto(double k1,
+    public ArrayList<Solution> multi_objective_pareto(double k1,
                                                        double k2,
                                                        boolean ignoreCubic,
                                                        Comparator<double[]> dominance,
@@ -160,7 +160,7 @@ public class Problem {
                     var cp = allPossiblePairs.get(i);
                     if (solutionList.isEmpty() || (!reduceToOne))
                         solutionList.add(new Solution(v, cp));
-                    else if (prev[0] >= v.objectives[0] && prev[1] >= v.objectives[1] && prev[2] >= v.objectives[2]) {
+                    else if (dominance.compare(prev, v.objectives) >= 0) {
                         solutionList.set(0, new Solution(v, cp));
                         prev = v.objectives;
                     }

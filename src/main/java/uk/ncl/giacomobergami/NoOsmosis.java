@@ -27,20 +27,17 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
+import io.jenetics.ext.moea.Pareto;
 import org.apache.commons.lang3.tuple.Pair;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import org.jblas.DoubleMatrix;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import uk.ncl.giacomobergami.algorithmics.CartesianProduct;
 import uk.ncl.giacomobergami.algorithmics.ClusterDifference;
 import uk.ncl.giacomobergami.osmosis.CSVOsmosisRecord;
 import uk.ncl.giacomobergami.osmosis.RSUProgram;
 import uk.ncl.giacomobergami.osmosis.VehicularProgram;
-import uk.ncl.giacomobergami.solver.ConcretePair;
-import uk.ncl.giacomobergami.solver.Problem;
-import uk.ncl.giacomobergami.solver.RSU;
-import uk.ncl.giacomobergami.solver.Vehicle;
+import uk.ncl.giacomobergami.solver.*;
 import uk.ncl.giacomobergami.sumo.VehicleRecord;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
@@ -112,12 +109,17 @@ public class NoOsmosis {
     }
 
     public void dumpSumo() throws Exception {
-//
 
-//
+        // With this, choosing the comparator given the specified parameters
+        Comparator<double[]> comparator;
+        if (conf.use_pareto_front) {
+            comparator = Pareto::dominance;
+        } else {
+            comparator = Comparator.comparingDouble(o -> o[0] * conf.p1 + o[1] * conf.p2 + o[2] * (1 - conf.p1  - conf.p2));
+        }
 
         HashMap<Double, Long> problemSolvingTime = new HashMap<>();
-        HashMap<Double, ArrayList<Problem.Solution>> simulationSolutions = new HashMap<>();
+        TreeMap<Double, ArrayList<LocalTimeOptimizationProblem.Solution>> simulationSolutions = new TreeMap<>();
         HashSet<Vehicle> intersectingVehicles = new HashSet<>();
 //        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
@@ -214,13 +216,13 @@ public class NoOsmosis {
             }
             if (vehs.isEmpty()) continue;
 
-            Problem solver = new Problem(vehs, tls, conf);
+            LocalTimeOptimizationProblem solver = new LocalTimeOptimizationProblem(vehs, tls, conf);
             List<ConfiguationEntity.IotDeviceEntity> allDevices = new ArrayList<>();
             List<ConfiguationEntity.VMEntity> allDestinations = new ArrayList<>();
 
             if (solver.init(allDevices, allDestinations)) { // also, re-setting the time benchmark
                 int expectedTotalVehs = allDevices.size();
-                ArrayList<Problem.Solution> sol;
+
                 if (conf.isDo_thresholding()) {
                     if (conf.use_nearest_MEL_to_IoT) {
                         solver.setNearestMELForIoT();
@@ -238,45 +240,12 @@ public class NoOsmosis {
                     solver.alwaysCommunicateWithTheNearestMel();
                 }
 
-                // With this, only picking the best deemed solution so far
-                if (conf.use_pareto_front) {
-                    sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
-                } else {
-                    sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
-                }
+
+                ArrayList<LocalTimeOptimizationProblem.Solution> sol =
+                        solver.multi_objective_pareto(conf.k1, conf.k2, conf.ignore_cubic, comparator, conf.reduce_to_one, conf.update_after_flow);
+
                 problemSolvingTime.put(currTime, solver.getRunTime());
                 simulationSolutions.put(currTime, sol);
-//                Set<Vehicle> sv = new HashSet<>();
-//                res.forEach((k, v)-> sv.addAll(v));
-//                System.out.println(sv.size()+" vs. "+expectedTotalVehs);
-//                if (sv.size() != expectedTotalVehs) {
-//                    expectedTotalVehs = allDevices.size();
-////                    res = new HashMap<>();
-////                    if (conf.isDo_thresholding()) {
-////                        if (conf.use_nearest_MEL_to_IoT) {
-////                            solver.setNearestMELForIoT();
-////                        } else {
-////                            solver.setAllPossibleMELForIoT();
-////                        }
-////                        if (conf.use_greedy_algorithm) {
-////                            solver.setGreedyPossibleTargetsForIoT(conf.use_local_demand_forecast);
-////                        } else if (conf.use_top_k_nearest_targets > 0) {
-////                            solver.setAllPossibleNearestKTargetsForCommunication(conf.use_top_k_nearest_targets, conf.use_top_k_nearest_targets_randomOne);
-////                        }  else {
-////                            solver.setAllPossibleTargetsForCommunication();
-////                        }
-////                    } else {
-////                        solver.alwaysCommunicateWithTheNearestMel();
-////                    }
-////                    if (conf.use_pareto_front) {
-////                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
-////                    } else {
-////                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
-////                    }
-//                    throw new RuntimeException(sv.size()+" vs. "+expectedTotalVehs);
-//                }
-
-
 
 //                canvas.getCloudDatacenter().get(0).setVMs(allDestinations);
 //                canvas.getEdgeDatacenter().get(0).setIoTDevices(allDevices);
@@ -295,72 +264,26 @@ public class NoOsmosis {
         List<String> veh_s = intersectingVehicles.stream().map(x -> x.id).collect(Collectors.toList());
 
         System.out.println("Computing all of the possible Pareto Routing scenarios...");
-        var allThePossibleSolutions = CartesianProduct.mapCartesianProduct(simulationSolutions);
-        simulationSolutions = null;
-        Map<Double, Problem.Solution> bestResult = null;
-        Double bestResultScore = Double.MAX_VALUE;
-        TreeMap<Double, Map<String, List<String>>> inStringTime = null;
-        HashMap<Double, Map<RSU, List<Vehicle>>> inCurrentTime = null;
-        HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> delta_associations = null;
-        if (allThePossibleSolutions.size() == 0) {
+
+        if (simulationSolutions.values().stream().anyMatch(ArrayList::isEmpty)) {
             System.err.println("NO viable solution found!");
         } else {
-            System.out.println("Valuating candidate solutions for ranking: ");
-            int i = 0;
-            for (Map<Double, Problem.Solution> candidateSolution : allThePossibleSolutions) {
-                if ((i % 1000) == 0) {
-                    System.out.print(i+"... ");
-                    System.out.flush();
-                }
-                HashMap<Double, Map<RSU, List<Vehicle>>> local_inCurrentTime = new HashMap<>();
-                TreeMap<Double, Map<String, List<String>>> local_inStringTime = new TreeMap<>();
-                TreeMap<Double, Map<String, List<String>>> vehClustAssoc = new TreeMap<>();
 
-                for (var timeToSolution : candidateSolution.entrySet()) {
-                    HashMap<String, List<String>> map = new HashMap<>(), map2 = new HashMap<>();
-                    var currTime = timeToSolution.getKey();
-                    local_inCurrentTime.put(currTime, timeToSolution.getValue().rsuToCommunicatingVehiclesCluster);
-                    local_inStringTime.put(currTime, map);
-                    vehClustAssoc.put(currTime, map2);
+            Double bestResultScore = Double.MAX_VALUE;
 
-                    for (var y : timeToSolution.getValue().rsuToCommunicatingVehiclesCluster.entrySet()) {
-                        List<String> ls = new ArrayList<>();
-                        map.put(y.getKey().tl_id, ls);
-                        for (var z : y.getValue()) {
-                            ls.add(z.id);
-                            if (!map2.containsKey(z.id)) {
-                                map2.put(z.id, new ArrayList<>());
-                            }
-                            map2.get(z.id).add(y.getKey().tl_id);
-                        }
-                    }
-                }
+            CandidateSolutionParameters candidate = new CandidateSolutionParameters();
 
-                // getting the simulation program associated to each vehicle
-                HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> local_delta_associations = ClusterDifference.diff(vehClustAssoc, veh_s, StringComparator.getInstance());
-
-                double totalChangePerVehicle = 0.0;
-                // Among these, we prefer a solution minimizing the size of the deta_associations, for all of the vehicles
-                for (var eachDelta : local_delta_associations.entrySet()) {
-                    totalChangePerVehicle += ClusterDifference.computeCumulativeChange(eachDelta.getValue().getValue(), conf.removal, conf.addition);
-                }
-
-                if (totalChangePerVehicle < bestResultScore) {
-                    bestResultScore = totalChangePerVehicle;
-                    bestResult = candidateSolution;
-                    delta_associations = local_delta_associations;
-                    inStringTime = local_inStringTime;
-                    inCurrentTime = local_inCurrentTime;
-                    System.out.print("[New best candidate: "+i+"]");
-                }
-                i++;
+            if (conf.clairvoyance) {
+                TemporalNetworkingRanking.oracularBestNetworking(simulationSolutions, veh_s, bestResultScore, candidate, conf.removal, conf.addition, comparator);
+            } else {
+                TemporalNetworkingRanking.nonclairvoyantBestNetworking(simulationSolutions, veh_s, bestResultScore, candidate, conf.removal, conf.addition, comparator);
             }
 
             // SETTING UP THE VEHICULAR PROGRAMS
             HashMap<String, VehicularProgram> vehProgramHashMap = new HashMap<>();
             for (var veh : intersectingVehicles) {
-                var vehProgram = new VehicularProgram(delta_associations.get(veh.id));
-                for (var entry : bestResult.entrySet()){
+                var vehProgram = new VehicularProgram(candidate.delta_associations.get(veh.id));
+                for (var entry : candidate.bestResult.entrySet()){
                     vehProgram.putDeltaRSUAssociation(entry.getKey(), entry.getValue().slowRetrievePath(veh));
                 }
                 vehProgram.finaliseProgram();
@@ -368,7 +291,7 @@ public class NoOsmosis {
             }
 
             TreeMap<Double, Map<String, List<String>>> networkTopology = new TreeMap<>(); // Actually, for RSU programs: saving one iteration cycle
-            for (var entry : bestResult.entrySet()){
+            for (var entry : candidate.bestResult.entrySet()){
                 var npMap = entry.getValue()
                      .RSUNetworkNeighbours
                      .entrySet()
@@ -387,11 +310,11 @@ public class NoOsmosis {
             // and to add others. This also defines with which MELs and Vehicles should an element connect/disconnect
             // for its routing
             HashMap<String, RSUProgram> rsuProgramHashMap = new HashMap<>();
-            var delta_clusters = ClusterDifference.diff(inStringTime, tls_s, StringComparator.getInstance());
+            var delta_clusters = ClusterDifference.diff(candidate.inStringTime, tls_s, StringComparator.getInstance());
             var delta_network_neighbours = ClusterDifference.diff(networkTopology, tls_s, StringComparator.getInstance());
 
             for (var r : tls) {
-                var rsuProgram = new RSUProgram(bestResult.keySet());
+                var rsuProgram = new RSUProgram(candidate.bestResult.keySet());
                 rsuProgram.finaliseProgram(delta_clusters.get(r.tl_id), delta_network_neighbours.get(r.tl_id));
                 rsuProgramHashMap.put(r.tl_id, rsuProgram);
             }
@@ -411,11 +334,11 @@ public class NoOsmosis {
             //    it should be communicating with, and which is the path for establish such a communication
 
             Path intersection_file_python = Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch.json");
-            Files.writeString(intersection_file_python, gson.toJson(inCurrentTime));
+            Files.writeString(intersection_file_python, gson.toJson(candidate.inCurrentTime));
 
 
             Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_clusters.json"), gson.toJson(delta_clusters));
-            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_assocs.json"), gson.toJson(delta_associations));
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_assocs.json"), gson.toJson(candidate.delta_associations));
             Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_iot_programs.json"), gson.toJson(vehProgramHashMap));
             Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_rsu_programs.json"), gson.toJson(rsuProgramHashMap));
 
@@ -463,7 +386,7 @@ public class NoOsmosis {
                 flsF2.write("SimTime,Sem,NVehs");
                 flsF2.newLine();
                 List<Vehicle> e = Collections.emptyList();
-                for (var cp : inCurrentTime.entrySet()) {
+                for (var cp : candidate.inCurrentTime.entrySet()) {
                     Double time = cp.getKey();
                     for (var sem : tls) {
                         flsF2.write(time+","+sem.tl_id +","+cp.getValue().getOrDefault(sem, e).size());

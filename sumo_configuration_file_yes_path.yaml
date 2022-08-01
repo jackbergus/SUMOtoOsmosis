@@ -44,13 +44,14 @@ VM_cloudletPolicy: "org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
 #VM_vmm: "xxx"
 terminate_simulation_at: 0
 max_threshold: 3
-best_distance: 200
+best_distance: 40
 do_thresholding: yes
+ignore_cubic: yes
 use_local_demand_forecast: no
-use_greedy_algorithm: yes
+use_greedy_algorithm: no
 use_nearest_MEL_to_IoT: yes
-use_top_k_nearest_targets: 1
-use_top_k_nearest_targets_randomOne: yes
+use_top_k_nearest_targets: 3
+use_top_k_nearest_targets_randomOne: no
 update_after_flow: no
 reduce_to_one: no
 k1 : 1.0
@@ -60,3 +61,4 @@ p1: 0.3
 p2: 0.3
 removal: 1.0
 addition: 1.0
+clairvoyance: yes

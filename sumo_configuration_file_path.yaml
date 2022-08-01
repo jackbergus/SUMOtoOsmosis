@@ -47,6 +47,7 @@ max_threshold: 20
 best_distance: 500
 do_thresholding: yes
 use_local_demand_forecast: no
+ignore_cubic: yes
 use_greedy_algorithm: yes
 update_after_flow: no
 use_top_k_nearest_targets: 0
@@ -60,3 +61,4 @@ p1: 0.3
 p2: 0.3
 removal: 1.0
 addition: 1.0
+clairvoyance: no
