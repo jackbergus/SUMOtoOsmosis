@@ -105,13 +105,82 @@ public class MinCostMaxFlow {
 		return found[sink];
 	}
 
+	HashMap<ConcretePair<Integer, Integer>, List<Integer>> map = null;
+	HashSet<Integer> vis  = null;
+	int[] d = null;
+	boolean[] b = null;
+	int[] T = null;
+
+	public void bellman_ford_moore(int r)
+	{
+		// Saving time for continuous memory allocation
+		if (map == null) map = new HashMap<>();
+		if (vis == null) vis = new HashSet<>();
+		if (T == null) T = new int[N];
+		if (b == null) b = new boolean[N];
+		if (d == null) d = new int[N];
+		if (!vis.add(r)) return; // Not performing any computation if we arlready performed the
+		// shortest path on this at some point
+		
+		for (int u = 0; u<N; u++) {
+			if (u != r) {
+				T[u] = -1;
+				d[u] = Integer.MAX_VALUE;
+				b[u] = false;
+			} else {
+				T[r] = -1;
+				d[r] = 0;
+				b[r] = true;
+			}
+		}
+		
+		Queue<Integer> S = new LinkedList<>();
+		S.add(r);
+		while (!S.isEmpty()) {
+			var u = S.poll();
+			b[u] = false;
+			for (int v = 0; v<N; v++) {
+				if (cost[u][v] > 0) {
+					if (d[u] + cost[u][v] < d[v]) {
+						if (!b[v]) {
+							S.add(v);
+							b[v] = true;
+						}
+						T[v] = u;
+						d[v] = d[u] + cost[u][v];
+					}
+				}
+			}
+		}
+
+		for (int target = 0; target < N; target++) {
+			var actualTarget = target;
+			var visitingTarget = target;
+			List<Integer> inversePath = new ArrayList<>(N);
+			while (T[visitingTarget] != -1) {
+				inversePath.add(visitingTarget);
+				visitingTarget = T[visitingTarget];
+			}
+			if (!inversePath.isEmpty()) {
+				if (visitingTarget != r) {
+					throw new RuntimeException("ERROR IN THE ALGORITHM: all the pathrs should lead to the source!");
+				}
+				inversePath.add(r);
+				Collections.reverse(inversePath);
+				map.put(new ConcretePair<>(r, actualTarget), inversePath);
+			}
+		}
+	}
+
 	class Result {
 		public double total_flow;
 		public double total_cost;
+		public Set<List<Integer>> minedPaths;
 
 		public Result(double total_flow, double total_cost) {
 			this.total_flow = total_flow;
 			this.total_cost = total_cost;
+			this.minedPaths = new HashSet<>();
 		}
 
 		@Override
@@ -157,6 +226,7 @@ public class MinCostMaxFlow {
 
 			// Set the default amount
 			int amt = INF;
+			List<Integer> path = new ArrayList<>();
 			for (int x = sink; x != src; x = dad[x])
 
 				amt = Math.min(amt,
@@ -166,7 +236,7 @@ public class MinCostMaxFlow {
 										- flow[dad[x]][x]);
 
 			for (int x = sink; x != src; x = dad[x]) {
-
+				if (x != sink) path.add(x);
 				if (flow[x][dad[x]] != 0) {
 					flow[x][dad[x]] -= amt;
 					result.total_cost -= amt * cost[x][dad[x]];
@@ -176,6 +246,8 @@ public class MinCostMaxFlow {
 					result.total_cost += amt * cost[dad[x]][x];
 				}
 			}
+			Collections.reverse(path);
+			result.minedPaths.add(path);
 			result.total_flow += amt;
 		}
 

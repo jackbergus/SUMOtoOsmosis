@@ -1,14 +1,13 @@
 package uk.ncl.giacomobergami.solver;
 
 import com.eatthepath.jvptree.VPTree;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.ortools.sat.*;
 import io.jenetics.ext.moea.Pareto;
 import io.jenetics.ext.moea.ParetoFront;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
+import uk.ncl.giacomobergami.algorithmics.CartesianProduct;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
+import uk.ncl.giacomobergami.utils.Union2;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,79 +41,29 @@ public class Problem {
 //        model = new CpModel();
     }
 
-    protected Set<Map<Vehicle, RSU>> allThePossibleAssociations(Map<Vehicle, List<RSU>> lists) {
-        Set<Map<Vehicle, RSU>> resultLists = new HashSet<>();
-        if (lists.size() == 0) {
-            resultLists.add(Collections.emptyMap());
-            return resultLists;
-        } else {
-            Vehicle current = lists.keySet().iterator().next();
-            var firstList = lists.remove(current);
-            if (firstList.isEmpty()) {
-                return allThePossibleAssociations(lists);
-            } else {
-                Set<Map<Vehicle, RSU>> remainingLists = allThePossibleAssociations(lists);
-                for (RSU condition : firstList) {
-                    for (Map<Vehicle, RSU> remainingList : remainingLists) {
-                        var resultList = new HashMap<>(remainingList);
-                        resultList.put(current, condition);
-                        resultLists.add(resultList);
-                    }
-                }
-            }
-        }
-        return resultLists;
-    }
-
-    public void solveGoogle() {
-
-    }
-
     public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, true, Pareto::dominance, reduceToOne);
+        return multi_objective_pareto(k1, k2, true, Pareto::dominance, reduceToOne, conf.update_after_flow);
     }
 
     public ArrayList<Solution> multi_objective_pareto(double k1, double k2, double pi1, double pi2, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, true, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne);
+        return multi_objective_pareto(k1, k2, true, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne, conf.update_after_flow);
     }
 
     public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean ignoreCubic, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, ignoreCubic, Pareto::dominance, reduceToOne);
+        return multi_objective_pareto(k1, k2, ignoreCubic, Pareto::dominance, reduceToOne, conf.update_after_flow);
     }
 
     public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean ignoreCubic, double pi1, double pi2, boolean reduceToOne) {
-        return multi_objective_pareto(k1, k2, ignoreCubic, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne);
+        return multi_objective_pareto(k1, k2, ignoreCubic, Comparator.comparingDouble(o -> o[0] * pi1 + o[1] * pi2 + o[2] * (1 - pi1 - pi2)), reduceToOne, conf.update_after_flow);
     }
 
-    public void googleORSolver() {
-        int numVehicles = 1;
-        int numFirstMile = 1;
-        int numLastMile = 1;
-
-        CpModel model = new CpModel();
-        Literal[][][] shifts = new Literal[numVehicles][numFirstMile][numLastMile];
-        for (int veh = 0; veh<numVehicles; veh++) {
-            Multimap<Integer, Literal> multimap = HashMultimap.create();
-            for (int first = 0; first<numFirstMile; first++) {
-                // At most one last mile association per first mile association
-                List<Literal> c1 = new ArrayList<>();
-                for (int last = 0; last<numLastMile; last++) {
-                    shifts[veh][first][last] = model.newBoolVar("veh" + veh + "from" + first + "to" + last);
-                    multimap.put(last, shifts[veh][first][last]);
-                }
-                model.addAtMostOne(c1);
-            }
-            // At most one first mile association per last mile association
-            multimap.asMap().forEach((key, value) -> model.addAtMostOne(value));
-        }
-
-
-    }
 
     public class Solution {
         double[] obj;
         Map<Vehicle, RSU> firstMileCommunication;
         Map<Vehicle, RSU> alphaAssociation;
+        private final Map<Vehicle, List<Union2<Vehicle, RSU>>> vehicularPaths;
+        public HashMap<RSU, List<Vehicle>> res;
 
         public Set<Map.Entry<Vehicle, RSU>> getAlphaAssociation() {
             return alphaAssociation.entrySet();
@@ -122,12 +71,22 @@ public class Problem {
 
         public Solution(double[] obj,
                         Map<Vehicle, RSU> firstMileCommunication,
-                        Map<Vehicle, RSU> alphaAssociation) {
+                        Map<Vehicle, RSU> alphaAssociation,
+                        Map<Vehicle, List<Union2<Vehicle, RSU>>> vehicularPaths) {
             this.obj = obj;
             this.firstMileCommunication = firstMileCommunication;
             this.alphaAssociation = alphaAssociation;
+            this.vehicularPaths = vehicularPaths;
+            this.res = new HashMap<>();
         }
 
+        public List<Union2<Vehicle, RSU>> retrievePath(Vehicle x) {
+            for (var tempt : vehicularPaths.entrySet()) {
+                if (tempt.getKey().id.equals(x.id))
+                    return tempt.getValue();
+            }
+            return null;
+        }
         public RSU firstMileAssociationWith(Vehicle x) {
             return firstMileCommunication.get(x);
         }
@@ -149,13 +108,6 @@ public class Problem {
         public double obj_network() {
             return obj[2];
         }
-        public double[] updateWithComputeRanking(double k1,
-                                                 double k2,
-                                                 boolean ignoreCubic,
-                                                 ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>> pair) {
-            obj = computeRanking(k1, k2, ignoreCubic, new ConcretePair<>(firstMileCommunication, alphaAssociation));
-            return obj;
-        }
     }
 
     /**
@@ -166,10 +118,11 @@ public class Problem {
                                                        double k2,
                                                        boolean ignoreCubic,
                                                        Comparator<double[]> dominance,
-                                                       boolean reduceToOne) {
+                                                       boolean reduceToOne,
+                                                       boolean updateAfterFlow) {
         long startTime = System.currentTimeMillis();
         final ArrayList<Solution> solution = new ArrayList<>();
-        final ArrayList<double[]> all = new ArrayList<>();
+        final ArrayList<ConcretePair<double[], Map<Vehicle, List<Union2<Vehicle, RSU>>>>> all = new ArrayList<>();
         final ArrayList<ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> allPossiblePairs = new ArrayList<>();
 
         for (Map<Vehicle, RSU> firstCommunication : this.firstMileCommunication) {
@@ -181,28 +134,28 @@ public class Problem {
         }
 
         // If there is only one solution to test, that is locally optimal by definition
-        if (allPossiblePairs.size() == 1) {
+        /*if (allPossiblePairs.size() == 1) {
             all.add(new double[]{0,0,0});
             solution.add(new Solution(new double[]{0,0,0}, allPossiblePairs.get(0).getKey(), allPossiblePairs.get(0).getValue()));
-        } else {
+        } else*/ {
             for (int i = 0; i < allPossiblePairs.size(); i++) {
                 if (i % 1000 == 0) System.out.print(i+"... ");
                 System.out.flush();
-                all.add(computeRanking(k1, k2, ignoreCubic, allPossiblePairs.get(i)));
+                all.add(computeRanking(k1, k2, ignoreCubic, allPossiblePairs.get(i), updateAfterFlow));
             }
             final ParetoFront<double[]> front = new ParetoFront<>(dominance);
             System.out.println("\nParetoing...\n");
-            front.addAll(all);
+            all.forEach(x -> front.add(x.key));
             double[] prev = new double[]{Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE};
             for (int i = 0, N = all.size(); i<N; i++) {
                 var v = all.get(i);
-                if (front.contains(v)) {
+                if (front.contains(v.key)) {
                     var cp = allPossiblePairs.get(i);
                     if (solution.isEmpty() || (!reduceToOne))
-                        solution.add(new Solution(v, cp.getKey(), cp.getValue()));
-                    else if (prev[0] >= v[0] && prev[1] >= v[1] && prev[2] >= v[2]) {
-                        solution.set(0, new Solution(v, cp.getKey(), cp.getValue()));
-                        prev = v;
+                        solution.add(new Solution(v.key, cp.getKey(), cp.getValue(), v.value));
+                    else if (prev[0] >= v.key[0] && prev[1] >= v.key[1] && prev[2] >= v.key[2]) {
+                        solution.set(0, new Solution(v.key, cp.getKey(), cp.getValue(), v.value));
+                        prev = v.key;
                     }
                 }
             }
@@ -212,10 +165,11 @@ public class Problem {
         return solution;
     }
 
-    private double[] computeRanking(double k1,
-                                    double k2,
-                                    boolean ignoreCubic,
-                                    ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>> pair) {
+    private ConcretePair<double[], Map<Vehicle, List<Union2<Vehicle, RSU>>>> computeRanking(double k1,
+                                                                                    double k2,
+                                                                                    boolean ignoreCubic,
+                                                                                    ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>> pair,
+                                                                                    boolean updateAfterRunning) {
         var firstCommunication = pair.getLeft();
         var alpha = pair.getRight();
 
@@ -232,16 +186,27 @@ public class Problem {
         Map<RSU, Integer> auto = new HashMap<>();
         Map<Vehicle, Integer> vehs = new HashMap<>();
         Map<RSU, Integer> rsus = new HashMap<>();
+        Map<Integer, Union2<Vehicle, RSU>> vehOrRSUPath = new HashMap<>();
+        Map<String, Vehicle> vehNameToVeh = new HashMap<>();
+        Map<String, RSU> rsuNameToRSU = new HashMap<>();
+        Map<Vehicle, List<Union2<Vehicle, RSU>>> paths = new HashMap<>();
 
         // Making all of the rsus as nodes of the graph, as we can distribute the load
         // within the network
         for (var rsu : this.rsus) {
-            rsus.put(rsu, counter.getAndIncrement());
+            var id = counter.getAndIncrement();
+            rsus.put(rsu, id);
+            vehOrRSUPath.put(id, Union2.right(rsu));
+            rsuNameToRSU.put(rsu.tl_id, rsu);
         }
 
         for (var assoc : firstCommunication.entrySet()) {
             // Adding the communicating IoT nodes to the graph if required
-            vehs.computeIfAbsent(assoc.getKey(), vehicle -> counter.getAndIncrement());
+            var id = counter.get();
+            vehs.computeIfAbsent(assoc.getKey(), vehicle -> id);
+            vehOrRSUPath.put(id, Union2.left(assoc.getKey()));
+            counter.getAndIncrement();
+            vehNameToVeh.put(assoc.getKey().id, assoc.getKey());
         }
 
         int vertexSize = counter.get();
@@ -315,8 +280,75 @@ public class Problem {
             cost[id][finalTarget] = 0;
         }
 
-        obj_network = flow.getMaxFlow(capacity, cost, initialSource, finalTarget).total_cost;
-        return new double[]{obj_IoT, obj_mel, obj_network};
+        var result = flow.getMaxFlow(capacity, cost, initialSource, finalTarget);
+        for (var p : result.minedPaths) {
+            var pp = p.stream().map(vehOrRSUPath::get).collect(Collectors.toList());
+//            System.out.println(pp);
+            var v = pp.get(0).getVal1();
+            var expected = pair.value.get(v);
+            var returned = pp.get(pp.size()-1).getVal2();
+            if (!Objects.equals(expected, returned)) {
+                if (updateAfterRunning) {
+                    pair.value.put(v, returned);
+                } else {
+                    // Forcibly running shortest path, so to reconstruct the expected path.
+                    flow.bellman_ford_moore(vehs.get(v));
+                    var cp = new ConcretePair<>(vehs.get(v), rsus.get(returned));
+                    p = flow.map.get(cp);
+                    if (p == null) {
+                        p = updatePathWithFeasibleOne(vehs, vehOrRSUPath, v, returned, p);
+                    }
+                    pp = p.stream().map(vehOrRSUPath::get).collect(Collectors.toList());
+                }
+            }
+            paths.put(v, pp);
+        }
+        if (result.minedPaths.size() != pair.key.size()) {
+            if (result.minedPaths.size() > pair.key.size()) {
+                throw new RuntimeException("We are expecting the opposite, that the mined paths are less than the expected ones");
+            }
+            for (var v : pair.key.entrySet()) {
+                if (paths.containsKey(v.getKey())) continue; // I am not re-computing the paths that were computed before
+                flow.bellman_ford_moore(vehs.get(v.getKey()));
+                var p = flow.map.get(new ConcretePair<>(vehs.get(v.getKey()), rsus.get(v.getValue())));
+                if (p == null) {
+                    p = updatePathWithFeasibleOne(vehs, vehOrRSUPath, v.getKey(), v.getValue(), p);
+                }
+                var pp = p.stream().map(vehOrRSUPath::get).collect(Collectors.toList());
+                paths.put(v.getKey(), pp);
+            }
+            if ((paths.size() != pair.key.size())) {
+                throw new RuntimeException("That should have fixed the problem! " + paths.size()+ " vs "+ pair.key.size());
+            }
+        }
+        obj_network = result.total_cost;
+        return new ConcretePair<>(new double[]{obj_IoT, obj_mel, obj_network}, paths);
+    }
+
+    private List<Integer> updatePathWithFeasibleOne(Map<Vehicle, Integer> vehs,
+                                                    Map<Integer, Union2<Vehicle, RSU>> vehOrRSUPath,
+                                                    Vehicle currentVehicle,
+                                                    RSU expectedRSU,
+                                                    List<Integer> p) {
+        // If the path is null, it means that despite the algorithm determined one node to be
+        // the best candidate solution, this is unreachable to the current car! Therefore, I need
+        // to get, among all of the possible minimum paths that there exist, the one which the target
+        // is nearer to the expected node
+        double candidateSize = Double.MAX_VALUE;
+        double countCandidates = 0;
+        for (var candidatePath : flow.map.entrySet()) {
+            if (!candidatePath.getKey().key.equals(vehs.get(currentVehicle))) continue;
+            double d = f.getDistance(vehOrRSUPath.get(candidatePath.getKey().value).getVal2(), expectedRSU);
+            if (d < candidateSize) {
+                candidateSize = d;
+                p = candidatePath.getValue();
+            }
+            countCandidates ++;
+        }
+        if (countCandidates == 0) {
+            throw new RuntimeException("ERROR: expected at least one feasable path from a vehicle to a RSU!");
+        }
+        return p;
     }
 
     public long getRunTime() {
@@ -369,20 +401,20 @@ public class Problem {
      */
     public void setNearestMELForIoT() {
          long startTime = System.currentTimeMillis();
-         firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
+         firstMileCommunication = CartesianProduct.mapCartesianProduct(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
          run_time += (System.currentTimeMillis() - startTime);
     }
 
     public void alwaysCommunicateWithTheNearestMel() {
         long startTime = System.currentTimeMillis();
-        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
+        firstMileCommunication = CartesianProduct.mapCartesianProduct(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
         targetCommunication = new ArrayList<>(firstMileCommunication);
         run_time += (System.currentTimeMillis() - startTime);
     }
 
     public void nearestFurthestRandomMELForIoT() {
         long startTime = System.currentTimeMillis();
-        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> rd.nextBoolean() ?
+        firstMileCommunication = CartesianProduct.mapCartesianProduct(vehicles_communicating_with_nearest_RSUs.entrySet().stream().filter(e ->!e.getValue().isEmpty()).collect(Collectors.toMap(Map.Entry::getKey, x -> rd.nextBoolean() ?
                 x.getValue().stream().min(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList():
                 x.getValue().stream().max(Comparator.comparingDouble(o -> f.getDistance(x.getKey(), o))).stream().toList()))).stream().toList();
         run_time += (System.currentTimeMillis() - startTime);
@@ -393,7 +425,7 @@ public class Problem {
      */
     public void setAllPossibleMELForIoT() {
         long startTime = System.currentTimeMillis();
-        firstMileCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.entrySet().stream()
+        firstMileCommunication = CartesianProduct.mapCartesianProduct(vehicles_communicating_with_nearest_RSUs.entrySet().stream()
                 .filter(e ->!e.getValue().isEmpty())
                 .collect(Collectors.<Map.Entry<Vehicle, ArrayList<RSU>>,Vehicle,List<RSU>>toMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())))).stream().toList();
         run_time += (System.currentTimeMillis() - startTime);
@@ -416,7 +448,7 @@ public class Problem {
             }
             trafficGreedyHeuristic(stringListHashMap, rsus, result, useLocalDemandForecast);
         }
-        targetCommunication = allThePossibleAssociations(result).stream().toList();
+        targetCommunication = CartesianProduct.mapCartesianProduct(result).stream().toList();
         run_time += (System.currentTimeMillis() - startTime);
     }
 
@@ -607,13 +639,13 @@ public class Problem {
      */
     public void setAllPossibleTargetsForCommunication() {
         long start = System.currentTimeMillis();
-        targetCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.keySet().stream().filter(e -> !vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()).collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e->List.copyOf(rsus)))).stream().toList();
+        targetCommunication = CartesianProduct.mapCartesianProduct(vehicles_communicating_with_nearest_RSUs.keySet().stream().filter(e -> !vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()).collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e->List.copyOf(rsus)))).stream().toList();
         run_time += (System.currentTimeMillis() - start);
     }
 
     public void setAllPossibleNearestKTargetsForCommunication(int k, boolean randomOne) {
         long start = System.currentTimeMillis();
-        targetCommunication = allThePossibleAssociations(vehicles_communicating_with_nearest_RSUs.keySet().stream().filter(e -> !vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()).collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e-> {
+        targetCommunication = CartesianProduct.mapCartesianProduct(vehicles_communicating_with_nearest_RSUs.keySet().stream().filter(e -> !vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()).collect(Collectors.<Vehicle, Vehicle, List<RSU>>toMap(e->e, e-> {
             Function<RSU, Double> fun = o -> f.getDistance(o, e);
             Comparator<RSU> comparator = Comparator.comparingDouble(fun::apply);
             PriorityQueue<RSU> pq = new PriorityQueue<>(k, comparator);

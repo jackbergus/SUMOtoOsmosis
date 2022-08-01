@@ -27,13 +27,15 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
-import it.unimi.dsi.fastutil.Hash;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import org.jblas.DoubleMatrix;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import uk.ncl.giacomobergami.algorithmics.CartesianProduct;
 import uk.ncl.giacomobergami.algorithmics.ClusterDifference;
 import uk.ncl.giacomobergami.osmosis.CSVOsmosisRecord;
+import uk.ncl.giacomobergami.osmosis.VehicularProgram;
+import uk.ncl.giacomobergami.solver.ConcretePair;
 import uk.ncl.giacomobergami.solver.Problem;
 import uk.ncl.giacomobergami.solver.RSU;
 import uk.ncl.giacomobergami.solver.Vehicle;
@@ -107,10 +109,12 @@ public class NoOsmosis {
     }
 
     public void dumpSumo() throws Exception {
-        HashMap<Double, HashMap<RSU, List<Vehicle>>> inCurrentTime = new HashMap<>();
-        TreeMap<Double, HashMap<String, List<String>>> inStringTime = new TreeMap<>();
-        TreeMap<Double, HashMap<String, List<String>>> vehClustAssoc = new TreeMap<>();
+//
+
+//
+
         HashMap<Double, Long> problemSolvingTime = new HashMap<>();
+        HashMap<Double, ArrayList<Problem.Solution>> simulationSolutions = new HashMap<>();
         HashSet<Vehicle> intersectingVehicles = new HashSet<>();
 //        ArrayList<CSVOsmosisAppFromTags.TransactionRecord> xyz = new ArrayList<>();
         File file = new File(conf.sumo_configuration_file_path);
@@ -214,7 +218,7 @@ public class NoOsmosis {
             if (solver.init(allDevices, allDestinations)) { // also, re-setting the time benchmark
                 int expectedTotalVehs = allDevices.size();
                 ArrayList<Problem.Solution> sol;
-                HashMap<RSU, List<Vehicle>> res = new HashMap<>();
+//                HashMap<RSU, List<Vehicle>> res = new HashMap<>();
                 if (conf.isDo_thresholding()) {
                     if (conf.use_nearest_MEL_to_IoT) {
                         solver.setNearestMELForIoT();
@@ -231,49 +235,51 @@ public class NoOsmosis {
                 } else {
                     solver.alwaysCommunicateWithTheNearestMel();
                 }
+
+                // With this, only picking the best deemed solution so far
                 if (conf.use_pareto_front) {
                     sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
                 } else {
                     sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
                 }
-                for (var x : sol) {
-                    for (var y : x.getAlphaAssociation()) {
-                        if (!res.containsKey(y.getValue()))
-                            res.put(y.getValue(), new ArrayList<>());
-                        res.get(y.getValue()).add(y.getKey());
+                problemSolvingTime.put(currTime, solver.getRunTime());
+                simulationSolutions.put(currTime, sol);
+                for (var potentialSolution : sol) {
+                    for (var vehicleToRSU : potentialSolution.getAlphaAssociation()) {
+                        if (!potentialSolution.res.containsKey(vehicleToRSU.getValue()))
+                            potentialSolution.res.put(vehicleToRSU.getValue(), new ArrayList<>());
+                        potentialSolution.res.get(vehicleToRSU.getValue()).add(vehicleToRSU.getKey());
                     }
                 }
-                Set<Vehicle> sv = new HashSet<>();
-                res.forEach((k, v)-> sv.addAll(v));
-                System.out.println(sv.size()+" vs. "+expectedTotalVehs);
-                if (sv.size() != expectedTotalVehs) {
-                    expectedTotalVehs = allDevices.size();
-                    res = new HashMap<>();
-//                    if (conf.isDo_thresholding()) {
-//                        if (conf.use_nearest_MEL_to_IoT) {
-//                            solver.setNearestMELForIoT();
-//                        } else {
-//                            solver.setAllPossibleMELForIoT();
-//                        }
-//                        if (conf.use_greedy_algorithm) {
-//                            solver.setGreedyPossibleTargetsForIoT(conf.use_local_demand_forecast);
-//                        } else if (conf.use_top_k_nearest_targets > 0) {
-//                            solver.setAllPossibleNearestKTargetsForCommunication(conf.use_top_k_nearest_targets, conf.use_top_k_nearest_targets_randomOne);
-//                        }  else {
-//                            solver.setAllPossibleTargetsForCommunication();
-//                        }
-//                    } else {
-//                        solver.alwaysCommunicateWithTheNearestMel();
-//                    }
-//                    if (conf.use_pareto_front) {
-//                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
-//                    } else {
-//                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
-//                    }
-                    throw new RuntimeException(sv.size()+" vs. "+expectedTotalVehs);
-                }
-                inCurrentTime.put(currTime, res);
-                problemSolvingTime.put(currTime, solver.getRunTime());
+//                Set<Vehicle> sv = new HashSet<>();
+//                res.forEach((k, v)-> sv.addAll(v));
+//                System.out.println(sv.size()+" vs. "+expectedTotalVehs);
+//                if (sv.size() != expectedTotalVehs) {
+//                    expectedTotalVehs = allDevices.size();
+////                    res = new HashMap<>();
+////                    if (conf.isDo_thresholding()) {
+////                        if (conf.use_nearest_MEL_to_IoT) {
+////                            solver.setNearestMELForIoT();
+////                        } else {
+////                            solver.setAllPossibleMELForIoT();
+////                        }
+////                        if (conf.use_greedy_algorithm) {
+////                            solver.setGreedyPossibleTargetsForIoT(conf.use_local_demand_forecast);
+////                        } else if (conf.use_top_k_nearest_targets > 0) {
+////                            solver.setAllPossibleNearestKTargetsForCommunication(conf.use_top_k_nearest_targets, conf.use_top_k_nearest_targets_randomOne);
+////                        }  else {
+////                            solver.setAllPossibleTargetsForCommunication();
+////                        }
+////                    } else {
+////                        solver.alwaysCommunicateWithTheNearestMel();
+////                    }
+////                    if (conf.use_pareto_front) {
+////                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.reduce_to_one);
+////                    } else {
+////                        sol = solver.multi_objective_pareto(conf.k1, conf.k2, conf.p1, conf.p2, conf.reduce_to_one);
+////                    }
+//                    throw new RuntimeException(sv.size()+" vs. "+expectedTotalVehs);
+//                }
 
 
 
@@ -292,42 +298,173 @@ public class NoOsmosis {
 
         List<String> tls_s = tls.stream().map(x -> x.tl_id).collect(Collectors.toList());
         List<String> veh_s = intersectingVehicles.stream().map(x -> x.id).collect(Collectors.toList());
-        for (var x : inCurrentTime.entrySet()) {
-            HashMap<String, List<String>> map = new HashMap<>(), map2 = new HashMap<>();
-            inStringTime.put(x.getKey(), map);
-            vehClustAssoc.put(x.getKey(), map2);
-            for (var y : x.getValue().entrySet()) {
-                List<String> ls = new ArrayList<>();
-                map.put(y.getKey().tl_id, ls);
-                for (var z : y.getValue()) {
-                    ls.add(z.id);
-                    if (!map2.containsKey(z.id)) {
-                        map2.put(z.id, new ArrayList<>());
-                    }
-                    map2.get(z.id).add(y.getKey().tl_id);
+
+        System.out.println("Computing all of the possible Pareto Routing scenarios...");
+        var allThePossibleSolutions = CartesianProduct.mapCartesianProduct(simulationSolutions);
+        Map<Double, Problem.Solution> bestResult = null;
+        Double bestResultScore = Double.MAX_VALUE;
+        TreeMap<Double, HashMap<String, List<String>>> inStringTime = null;
+        HashMap<Double, HashMap<RSU, List<Vehicle>>> inCurrentTime = null;
+        HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> delta_associations = null;
+        if (allThePossibleSolutions.size() == 0) {
+            System.err.println("NO viable solution found!");
+        } else {
+            System.out.println("Valuating candidate solutions for ranking: ");
+            int i = 0;
+            for (Map<Double, Problem.Solution> candidateSolution : allThePossibleSolutions) {
+                if ((i % 1000) == 0) {
+                    System.out.print(i+"... ");
+                    System.out.flush();
                 }
+                HashMap<Double, HashMap<RSU, List<Vehicle>>> local_inCurrentTime = new HashMap<>();
+                TreeMap<Double, HashMap<String, List<String>>> local_inStringTime = new TreeMap<>();
+                TreeMap<Double, HashMap<String, List<String>>> vehClustAssoc = new TreeMap<>();
+
+                for (var timeToSolution : candidateSolution.entrySet()) {
+                    HashMap<String, List<String>> map = new HashMap<>(), map2 = new HashMap<>();
+                    var currTime = timeToSolution.getKey();
+                    local_inCurrentTime.put(currTime, timeToSolution.getValue().res);
+                    local_inStringTime.put(currTime, map);
+                    vehClustAssoc.put(currTime, map2);
+
+                    for (var y : timeToSolution.getValue().res.entrySet()) {
+                        List<String> ls = new ArrayList<>();
+                        map.put(y.getKey().tl_id, ls);
+                        for (var z : y.getValue()) {
+                            ls.add(z.id);
+                            if (!map2.containsKey(z.id)) {
+                                map2.put(z.id, new ArrayList<>());
+                            }
+                            map2.get(z.id).add(y.getKey().tl_id);
+                        }
+                    }
+                }
+
+                // getting the simulation program associated to each vehicle
+                HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> local_delta_associations = ClusterDifference.diff(vehClustAssoc, veh_s, (o1, o2) -> {
+                    if (Objects.equals(o1, o2)) return 0;
+                    if (o1 == null) return -1;
+                    else if (o2 == null) return 1;
+                    else return o1.compareTo(o2);
+                });
+
+                double totalChangePerVehicle = 0.0;
+                // Among these, we prefer a solution minimizing the size of the deta_associations, for all of the vehicles
+                for (var eachDelta : local_delta_associations.entrySet()) {
+                    totalChangePerVehicle += ClusterDifference.computeCumulativeChange(eachDelta.getValue().getValue(), conf.removal, conf.addition);
+                }
+
+                if (totalChangePerVehicle < bestResultScore) {
+                    bestResultScore = totalChangePerVehicle;
+                    bestResult = candidateSolution;
+                    delta_associations = local_delta_associations;
+                    inStringTime = local_inStringTime;
+                    inCurrentTime = local_inCurrentTime;
+                    System.out.print("[New best candidate: "+i+"]");
+                }
+                i++;
+            }
+
+            // This concept is relevant, so if we need to remove some nodes from the simulation,
+            // and to add others
+            var delta_clusters = ClusterDifference.diff(inStringTime, tls_s, (o1, o2) -> {
+                if (Objects.equals(o1, o2)) return 0;
+                if (o1 == null) return -1;
+                else if (o2 == null) return 1;
+                else return o1.compareTo(o2);
+            });
+
+            HashMap<Vehicle, VehicularProgram> programHashMap = new HashMap<>();
+            for (var veh : intersectingVehicles) {
+                var vehProgram = new VehicularProgram(delta_associations.get(veh.id));
+                for (var entry : bestResult.entrySet() ){
+                    vehProgram.put(entry.getKey(), entry.getValue().retrievePath(veh));
+                }
+                vehProgram.finaliseProgram();
+                programHashMap.put(veh, vehProgram);
+            }
+
+            // TODO: simulation using programHashMap
+            // delta_associations contains the associations of each IoT device with a MEL
+            // So, we can give each agent this information as the "program"/trace they will execute
+            // The other MELs, will just blatantly forward/send the messages to the destination via Routing (?)
+            // At each simulation time t, get the nearest trace event T describing it, so t~T
+            //
+            // 1. If unchanged, SCENARIO 1: then do nothing at all
+            //                  SCENARIO 2: then send another message to the same server
+            // 2. If changed, remove any message that was coming as from a reponse from my previous send
+            //                send new messages to my new last mile MEL
+            // 3. If the current implementation has no routing information, then we can use the
+            //    vehicular programs in programHashMap, which state at each time with which node
+            //    it should be communicating with, and which is the path for establish such a communication
+
+            Path intersection_file_python = Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch.json");
+            Files.writeString(intersection_file_python, gson.toJson(inCurrentTime));
+
+
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_clusters.json"), gson.toJson(new HashMap<>(delta_clusters)));
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_assocs.json"), gson.toJson(new HashMap<>(delta_associations)));
+
+
+            {
+                FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_time_benchmark.csv").toFile());
+                BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
+                flsF2.write("sim_time,bench_time");
+                flsF2.newLine();
+                for (var x : problemSolvingTime.entrySet()) {
+                    flsF2.write(x.getKey()+","+x.getValue());
+                    flsF2.newLine();
+                }
+                flsF2.close();
+                tlsF.close();
+            }
+
+            {
+                FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tls.csv").toFile());
+                BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
+                flsF2.write("Id,X,Y");
+                var XMax = tls.stream().map(x -> x.tl_x).max(Comparator.comparingDouble(y -> y)).get();
+                var YMin = tls.stream().map(x -> x.tl_y).min(Comparator.comparingDouble(y -> y)).get();
+                tls.sort(Comparator.comparingDouble(sem -> {
+                    double x = sem.tl_x - XMax;
+                    double y = sem.tl_y - YMin;
+                    return (x*x)+(y*y);
+                }));
+
+                System.out.println(            tls.subList(0, 8).stream().map(x -> x.tl_id
+                ).collect(Collectors.joining("\",\"","LS <- list(\"", "\")")));
+
+                flsF2.newLine();
+                for (var x : tls) {
+                    flsF2.write(x.tl_id +","+x.tl_x +","+x.tl_y);
+                    flsF2.newLine();
+                }
+                flsF2.close();
+                tlsF.close();
+            }
+
+            {
+                FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch_toplot.csv").toFile());
+                BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
+                flsF2.write("SimTime,Sem,NVehs");
+                flsF2.newLine();
+                List<Vehicle> e = Collections.emptyList();
+                for (var cp : inCurrentTime.entrySet()) {
+                    Double time = cp.getKey();
+                    for (var sem : tls) {
+                        flsF2.write(time+","+sem.tl_id +","+cp.getValue().getOrDefault(sem, e).size());
+                        flsF2.newLine();
+                    }
+                }
+                flsF2.close();
+                tlsF.close();
             }
         }
 
-        // This concept is relevant, so if we need to remove some nodes from the simulation,
-        // and to add others
-        var delta_clusters = ClusterDifference.diff(inStringTime, tls_s, (o1, o2) -> {
-            if (Objects.equals(o1, o2)) return 0;
-            if (o1 == null) return -1;
-            else if (o2 == null) return 1;
-            else return o1.compareTo(o2);
-        });
-        var delta_associations = ClusterDifference.diff(vehClustAssoc, veh_s, (o1, o2) -> {
-            if (Objects.equals(o1, o2)) return 0;
-            if (o1 == null) return -1;
-            else if (o2 == null) return 1;
-            else return o1.compareTo(o2);
-        });
-        Path intersection_file_python = Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch.json");
-        Files.writeString(intersection_file_python, gson.toJson(new HashMap<>(inCurrentTime)));
 
-        Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_clusters.json"), gson.toJson(new HashMap<>(delta_clusters)));
-        Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_assocs.json"), gson.toJson(new HashMap<>(delta_associations)));
+
+
+
 
 //        {
 //            FileOutputStream fos = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+".csv").toFile());
@@ -358,59 +495,7 @@ public class NoOsmosis {
 //            batt.close();
 //        }
 
-        {
-            FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_time_benchmark.csv").toFile());
-            BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
-            flsF2.write("sim_time,bench_time");
-            flsF2.newLine();
-            for (var x : problemSolvingTime.entrySet()) {
-                flsF2.write(x.getKey()+","+x.getValue());
-                flsF2.newLine();
-            }
-            flsF2.close();
-            tlsF.close();
-        }
 
-        {
-            FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tls.csv").toFile());
-            BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
-            flsF2.write("Id,X,Y");
-            var XMax = tls.stream().map(x -> x.tl_x).max(Comparator.comparingDouble(y -> y)).get();
-            var YMin = tls.stream().map(x -> x.tl_y).min(Comparator.comparingDouble(y -> y)).get();
-            tls.sort(Comparator.comparingDouble(sem -> {
-                double x = sem.tl_x - XMax;
-                double y = sem.tl_y - YMin;
-                return (x*x)+(y*y);
-            }));
-
-            System.out.println(            tls.subList(0, 8).stream().map(x -> x.tl_id
-            ).collect(Collectors.joining("\",\"","LS <- list(\"", "\")")));
-
-            flsF2.newLine();
-            for (var x : tls) {
-                flsF2.write(x.tl_id +","+x.tl_x +","+x.tl_y);
-                flsF2.newLine();
-            }
-            flsF2.close();
-            tlsF.close();
-        }
-
-        {
-            FileOutputStream tlsF = new FileOutputStream(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_tracesMatch_toplot.csv").toFile());
-            BufferedWriter flsF2 = new BufferedWriter(new OutputStreamWriter(tlsF));
-            flsF2.write("SimTime,Sem,NVehs");
-            flsF2.newLine();
-            List<Vehicle> e = Collections.emptyList();
-            for (var cp : inCurrentTime.entrySet()) {
-                Double time = cp.getKey();
-                for (var sem : tls) {
-                    flsF2.write(time+","+sem.tl_id +","+cp.getValue().getOrDefault(sem, e).size());
-                    flsF2.newLine();
-                }
-            }
-            flsF2.close();
-            tlsF.close();
-        }
     }
 
 

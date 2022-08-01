@@ -1,5 +1,6 @@
 package uk.ncl.giacomobergami.algorithmics;
 
+import org.apache.commons.math3.ml.clustering.Cluster;
 import uk.ncl.giacomobergami.solver.ConcretePair;
 import uk.ncl.giacomobergami.solver.RSU;
 import uk.ncl.giacomobergami.solver.Vehicle;
@@ -36,6 +37,27 @@ public class ClusterDifference<T> implements Predicate<T> {
 
     public final ClusterDifference.type change;
     public final Map<T, typeOfChange> changes;
+
+    public double computeEditDistance(double scoreRemoval, double scoreAddition) {
+        double totalChange = 0;
+        if (change == type.CHANGED) {
+            for (var changeType : changes.values()) {
+                switch (changeType) {
+                    case REMOVAL_OF -> totalChange += scoreRemoval;
+                    case ADDITION_OF -> totalChange += scoreAddition;
+                }
+            }
+        }
+        return totalChange;
+    }
+
+    public static <T> double computeCumulativeChange(List<ClusterDifference<T>> ls, double scoreRemoval, double scoreAddition) {
+        double totalChange = 0;
+        for (var x : ls) {
+            totalChange += x.computeEditDistance(scoreRemoval, scoreAddition);
+        }
+        return totalChange;
+    }
 
     public ClusterDifference() {
         change = type.UNCHANGED;
@@ -136,8 +158,8 @@ public class ClusterDifference<T> implements Predicate<T> {
 
 
     public static <H, T> List<List<T>> reconstruct(ConcretePair<ConcretePair<H, List<T>>,
-                                                                         List<ClusterDifference<T>>> reconstruction,
-                                                                         Comparator<T> cmp) {
+                                                   List<ClusterDifference<T>>> reconstruction,
+                                                   Comparator<T> cmp) {
         List<List<T>> result = new ArrayList<>(reconstruction.getRight().size()+1);
         result.add(reconstruction.getLeft().getValue());
         for (int i = 0, N = reconstruction.getRight().size(); i<N; i++) {

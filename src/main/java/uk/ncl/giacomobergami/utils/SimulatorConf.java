@@ -67,6 +67,32 @@ public class SimulatorConf {
     public double p1, p2;
     public int use_top_k_nearest_targets;
     public boolean use_top_k_nearest_targets_randomOne;
+    public boolean update_after_flow;
+    public double removal, addition;
+
+    public double getRemoval() {
+        return removal;
+    }
+
+    public void setRemoval(double removal) {
+        this.removal = removal;
+    }
+
+    public double getAddition() {
+        return addition;
+    }
+
+    public void setAddition(double addition) {
+        this.addition = addition;
+    }
+
+    public boolean isUpdate_after_flow() {
+        return update_after_flow;
+    }
+
+    public void setUpdate_after_flow(boolean update_after_flow) {
+        this.update_after_flow = update_after_flow;
+    }
 
     public boolean isUse_top_k_nearest_targets_randomOne() {
         return use_top_k_nearest_targets_randomOne;

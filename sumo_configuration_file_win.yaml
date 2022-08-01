@@ -48,6 +48,7 @@ do_thresholding: yes
 use_local_demand_forecast: no
 use_top_k_nearest_targets: 3
 use_top_k_nearest_targets_randomOne: no
+update_after_flow: no
 use_greedy_algorithm: yes
 use_nearest_MEL_to_IoT: yes
 reduce_to_one: yes
@@ -56,3 +57,5 @@ k2 : 1.0
 use_pareto_front: yes
 p1: 0.3
 p2: 0.3
+removal: 1.0
+addition: 1.0
