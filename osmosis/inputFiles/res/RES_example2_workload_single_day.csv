@@ -1,0 +1,2 @@
+OsmesisApp,ID,DataRate_Sec,StopDataGeneration_Sec,IoTDevice,IoTDeviceOutputData_Mb,MELName,OsmesisEdgelet_MI,MELOutputData_Mb,VmName,OsmesisCloudlet_MI
+App_1,1,120,86400,temperature_1,90,MEL.*,250,70,VM_1,200

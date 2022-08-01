@@ -1,0 +1,102 @@
+{
+  "simulationDate": "20160504:0000",
+  "edgeDatacenters": [
+    {
+      "name": "Edge_1",
+      "type": "edge",
+      "energyManagementPolicy": {
+        "className": "ExportLimitEnergyManagementPolicy"
+      },
+      "utilization" : "50",
+      "energyStorage": [
+        {
+          "type": "BATTERY",
+          "capacity": "100",
+          "currentEnergy": "20"
+        }
+      ],
+      "powerGrid": [
+        {
+          "country": "Poland",
+          "priceForEnergy": "0.2"
+        }
+      ],
+      "energySources": [
+        {
+          "name": "PV_panels_1",
+          "type": "PV_PANELS",
+          "technology": "CIS",
+          "angle": 50,
+          "peakPower": 200,
+          "loss": 20,
+          "location": {
+            "latitude": 50.0,
+            "longitude": 20.0,
+            "elevation": 0.0
+          }
+        },
+        {
+          "name": "PV_panels_2",
+          "type": "PV_PANELS",
+          "angle": "70",
+          "peakPower": 100,
+          "loss": 15,
+          "location": {
+            "latitude": 50.1,
+            "longitude": 20.1,
+            "elevation": 0.0
+          }
+        }
+      ]
+    }
+  ],
+  "cloudDatacenters": [
+    {
+      "name": "Cloud_1",
+      "type": "cloud",
+      "energyManagementPolicy": {
+        "className": "ExportLimitWithEnergyStoragePolicy"
+      },
+      "utilization" : "40",
+      "energyStorage": [
+        {
+          "type": "BATTERY",
+          "capacity": "500",
+          "currentEnergy": "10"
+        }
+      ],
+      "powerGrid": [
+        {
+          "country": "Poland",
+          "priceForEnergy": "0.4"
+        }
+      ],
+      "energySources": [
+        {
+          "name": "PV_panels_1",
+          "type": "PV_PANELS",
+          "peakPower": 70,
+          "loss": "5",
+          "angle": "40",
+          "location": {
+            "latitude": 30.0,
+            "longitude": 24.1,
+            "elevation": 0.0
+          }
+        },
+        {
+          "name": "PV_panels_2",
+          "type": "PV_PANELS",
+          "loss": 5,
+          "peakPower": 60,
+          "angle": "30",
+          "location": {
+            "latitude": 30.2,
+            "longitude": 24.1,
+            "elevation": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}

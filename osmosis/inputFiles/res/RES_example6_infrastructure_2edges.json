@@ -1,7 +1,7 @@
 {   
    "edgeDatacenter":[
 	{
-		"name":"Edge_1",
+		"name":"Edge_M_1",
 		"type":"edge",
 		"schedulingInterval":1.0,
 		"vmAllocationPolicy":{
@@ -34,11 +34,27 @@
 				"bwSize":100,				
 				"storage":10000,
 				"mips":10000				
-            }
+            },
+			{
+				"name":"edgeDevice_3",
+				"pes" : 4,
+				"ramSize":10000,
+				"bwSize":100,
+				"storage":10000,
+				"mips":10000
+			},
+			{
+				"name":"edgeDevice_4",
+				"pes" : 4,
+				"ramSize":10000,
+				"bwSize":100,
+				"storage":10000,
+				"mips":10000
+			}
             ],
 		"MELEntities":[
 		{
-			"name":"MEL_1",								
+			"name":"MEL.1",
 			"bw":100,				 
 			"mips":250,			
 			"ram":10000,
@@ -47,14 +63,32 @@
 			"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
 		},
 		{
-			"name":"MEL_2",					
+			"name":"MEL.2",
 			"bw":100,
 			"mips":250,			
 			"ram":10000,
 			"pesNumber":1,
 			"vmm":"xxx",			
 			"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"			 
-		}		
+		},
+			{
+				"name":"MEL.3",
+				"bw":100,
+				"mips":250,
+				"ram":10000,
+				"pesNumber":1,
+				"vmm":"xxx",
+				"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			},
+			{
+				"name":"MEL.4",
+				"bw":100,
+				"mips":250,
+				"ram":10000,
+				"pesNumber":1,
+				"vmm":"xxx",
+				"cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			}
 		],
 		"controllers": [
 		{
@@ -123,15 +157,17 @@
 			{ "source" : "core2" , "destination" : "edge4" , "bw" : 100},
 			{ "source" : "core2" , "destination" : "edge5" , "bw" : 100},			
 			{ "source" : "edge1" , "destination" : "edgeDevice_1" , "bw" : 100},
-			{ "source" : "edge2" , "destination" : "edgeDevice_2" , "bw" : 100}
+			{ "source" : "edge2" , "destination" : "edgeDevice_2" , "bw" : 100},
+			{ "source" : "edge3" , "destination" : "edgeDevice_3" , "bw" : 100},
+			{ "source" : "edge4" , "destination" : "edgeDevice_4" , "bw" : 100}
 		],
 		"ioTDevices":[
 			  {
 				"name":"temperature_1",
 				"bw":100,				
 				"max_battery_capacity":100.0,
-				"battery_sensing_rate":0.001,
-				"battery_sending_rate":0.001,
+				"battery_sensing_rate":0.0001,
+				"battery_sending_rate":0.0001,
 				"ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",		
 				 "mobilityEntity":{
 					"movable":false,
@@ -327,7 +363,271 @@
 				 }
 			  }
 		]					
-    }
+    },
+	{
+		   "name":"Edge_M_2",
+		   "type":"edge",
+		   "schedulingInterval":1.0,
+		   "vmAllocationPolicy":{
+			   "className":"VmAllocationPolicyCombinedLeastFullFirst"
+		   },
+		   "characteristics":{
+			   "costPerMem":0.05,
+			   "cost":1.0,
+			   "os":"Linux",
+			   "costPerSec":0.0,
+			   "vmm":"Xen",
+			   "timeZone":10.0,
+			   "costPerBw":0.0,
+			   "costPerStorage":0.001,
+			   "architecture":"x86"
+		   },
+		   "hosts":[
+			   {
+				   "name":"edgeDevice_21",
+				   "pes" : 4,
+				   "ramSize":10000,
+				   "bwSize":100,
+				   "storage":10000,
+				   "mips":10000
+			   },
+			   {
+				   "name":"edgeDevice_22",
+				   "pes" : 4,
+				   "ramSize":10000,
+				   "bwSize":100,
+				   "storage":10000,
+				   "mips":10000
+			   },
+			   {
+				   "name":"edgeDevice_23",
+				   "pes" : 4,
+				   "ramSize":10000,
+				   "bwSize":100,
+				   "storage":10000,
+				   "mips":10000
+			   },
+			   {
+				   "name":"edgeDevice_24",
+				   "pes" : 4,
+				   "ramSize":10000,
+				   "bwSize":100,
+				   "storage":10000,
+				   "mips":10000
+			   }
+		   ],
+		   "MELEntities":[
+			   {
+				   "name":"MEL.21",
+				   "bw":100,
+				   "mips":250,
+				   "ram":10000,
+				   "pesNumber":1,
+				   "vmm":"xxx",
+				   "cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			   },
+			   {
+				   "name":"MEL.22",
+				   "bw":100,
+				   "mips":250,
+				   "ram":10000,
+				   "pesNumber":1,
+				   "vmm":"xxx",
+				   "cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			   },
+			   {
+				   "name":"MEL.23",
+				   "bw":100,
+				   "mips":250,
+				   "ram":10000,
+				   "pesNumber":1,
+				   "vmm":"xxx",
+				   "cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			   },
+			   {
+				   "name":"MEL.24",
+				   "bw":100,
+				   "mips":250,
+				   "ram":10000,
+				   "pesNumber":1,
+				   "vmm":"xxx",
+				   "cloudletSchedulerClassName":"org.cloudbus.cloudsim.CloudletSchedulerTimeShared"
+			   }
+		   ],
+		   "controllers": [
+			   {
+				   "name": "edge2_sdn1",
+				   "trafficPolicy": "FairShare",
+				   "routingPolicy": "ShortestPathBw"
+			   }
+		   ],
+		   "switches":[
+			   {
+				   "type" : "gateway",
+				   "name": "edge2_gateway",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "core",
+				   "name": "core21",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "core",
+				   "name": "core22",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "edge",
+				   "name": "edge21",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "edge",
+				   "name": "edge22",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "edge",
+				   "name": "edge23",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "edge",
+				   "name": "edge24",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   },
+			   {
+				   "type" : "edge",
+				   "name": "edge25",
+				   "controller": "edge2_sdn1",
+				   "iops":1000000000
+			   }
+		   ],
+		   "links" :
+		   [
+			   { "source" : "core21" , "destination" : "edge2_gateway", "bw" : 100},
+			   { "source" : "core22" , "destination" : "edge2_gateway", "bw" : 100},
+			   { "source" : "core21" , "destination" : "edge21" , "bw" : 100},
+			   { "source" : "core21" , "destination" : "edge22" , "bw" : 100},
+			   { "source" : "core22" , "destination" : "edge23" , "bw" : 100},
+			   { "source" : "core22" , "destination" : "edge24" , "bw" : 100},
+			   { "source" : "core22" , "destination" : "edge25" , "bw" : 100},
+			   { "source" : "edge21" , "destination" : "edgeDevice_21" , "bw" : 100},
+			   { "source" : "edge22" , "destination" : "edgeDevice_22" , "bw" : 100},
+			   { "source" : "edge23" , "destination" : "edgeDevice_23" , "bw" : 100},
+			   { "source" : "edge24" , "destination" : "edgeDevice_24" , "bw" : 100}
+		   ],
+		   "ioTDevices":[
+			   {
+				   "name":"temperature_21",
+				   "bw":100,
+				   "max_battery_capacity":100.0,
+				   "battery_sensing_rate":0.0001,
+				   "battery_sending_rate":0.0001,
+				   "ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",
+				   "mobilityEntity":{
+					   "movable":false,
+					   "location":{
+						   "x":0.0,
+						   "y":0.0,
+						   "z":0.0
+					   }
+				   },
+				   "networkModelEntity":{
+					   "communicationProtocol":"xmpp",
+					   "networkType":"wifi"
+				   }
+			   },
+			   {
+				   "name":"temperature_22",
+				   "bw":100,
+				   "max_battery_capacity":100.0,
+				   "battery_sensing_rate":0.001,
+				   "battery_sending_rate":0.001,
+				   "ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",
+				   "mobilityEntity":{
+					   "movable":false,
+					   "location":{
+						   "x":0.0,
+						   "y":0.0,
+						   "z":0.0
+					   }
+				   },
+				   "networkModelEntity":{
+					   "communicationProtocol":"xmpp",
+					   "networkType":"wifi"
+				   }
+			   },
+			   {
+				   "name":"temperature_23",
+				   "bw":100,
+				   "max_battery_capacity":100.0,
+				   "battery_sensing_rate":0.001,
+				   "battery_sending_rate":0.001,
+				   "ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",
+				   "mobilityEntity":{
+					   "movable":false,
+					   "location":{
+						   "x":0.0,
+						   "y":0.0,
+						   "z":0.0
+					   }
+				   },
+				   "networkModelEntity":{
+					   "communicationProtocol":"xmpp",
+					   "networkType":"wifi"
+				   }
+			   },
+			   {
+				   "name":"temperature_24",
+				   "bw":100,
+				   "max_battery_capacity":100.0,
+				   "battery_sensing_rate":0.001,
+				   "battery_sending_rate":0.001,
+				   "ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",
+				   "mobilityEntity":{
+					   "movable":false,
+					   "location":{
+						   "x":0.0,
+						   "y":0.0,
+						   "z":0.0
+					   }
+				   },
+				   "networkModelEntity":{
+					   "communicationProtocol":"xmpp",
+					   "networkType":"wifi"
+				   }
+			   },
+			   {
+				   "name":"temperature_25",
+				   "bw":100,
+				   "max_battery_capacity":100.0,
+				   "battery_sensing_rate":0.001,
+				   "battery_sending_rate":0.001,
+				   "ioTClassName":"org.cloudbus.cloudsim.edge.iot.TemperatureSensor",
+				   "mobilityEntity":{
+					   "movable":false,
+					   "location":{
+						   "x":0.0,
+						   "y":0.0,
+						   "z":0.0
+					   }
+				   },
+				   "networkModelEntity":{
+					   "communicationProtocol":"xmpp",
+					   "networkType":"wifi"
+				   }
+			   }
+		   ]
+	   }
    ],  
 	  "logEntity":{
 	  "logLevel":"debug",
@@ -338,7 +638,7 @@
    "trace_flag":false,
    "cloudDatacenter": [
     {
-		"name": "Cloud_1",
+		"name": "Cloud_M_1",
 		"type":"cloud",
 		"vmAllocationPolicy": "VmAllocationPolicyCombinedLeastFullFirst",
 		"hosts": 

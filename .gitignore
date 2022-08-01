@@ -8,3 +8,17 @@
 # Editor-based HTTP Client requests
 /httpRequests/
 /IoTSim-Osmosis-RES.iml
+osmosis_confs/
+osmosis_confs/*
+osmosis_csv/*
+osmosis_csv
+log.txt
+sumo_log.txt
+sumo_trace.xml
+target/
+target/*
+paper/*.mpg4
+paper/*.avi
+paper/*.gif
+paper/*.pdf
+paper/*.gz
