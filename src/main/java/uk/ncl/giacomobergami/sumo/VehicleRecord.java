@@ -39,6 +39,62 @@ public class VehicleRecord extends Vehicle {
         super("", 0, 0);
     }
 
+    public String getId() {
+        return super.id;
+    }
+
+    public void setId(String id) {
+        super.id = id;
+    }
+
+    public double getAngle() {
+        return angle;
+    }
+
+    public void setAngle(double angle) {
+        this.angle = angle;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(double speed) {
+        this.speed = speed;
+    }
+
+    public double getPos() {
+        return pos;
+    }
+
+    public void setPos(double pos) {
+        this.pos = pos;
+    }
+
+    public String getLane() {
+        return lane;
+    }
+
+    public void setLane(String lane) {
+        this.lane = lane;
+    }
+
+    public double getSlope() {
+        return slope;
+    }
+
+    public void setSlope(double slope) {
+        this.slope = slope;
+    }
+
     @Override
     public String toString() {
         return "VehicleRecord{" +

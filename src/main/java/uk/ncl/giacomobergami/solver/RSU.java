@@ -9,9 +9,9 @@ public class RSU extends TrafficLightInformation {
 
     public RSU(String id, double x, double y, double communication_radius,
                double max_vehicle_communication) {
-        super.id = id;
-        super.x = x;
-        super.y = y;
+        super.tl_id = id;
+        super.tl_x = x;
+        super.tl_y = y;
         this.communication_radius = communication_radius;
         this.max_vehicle_communication = max_vehicle_communication;
     }
@@ -19,9 +19,9 @@ public class RSU extends TrafficLightInformation {
     @Override
     public String toString() {
         return "RSU{" +
-                "id='" + id + '\'' +
-                ", x=" + x +
-                ", y=" + y +
+                "id='" + tl_id + '\'' +
+                ", x=" + tl_x +
+                ", y=" + tl_y +
                 ", communication_radius=" + communication_radius +
                 ", max_vehicle_communication=" + max_vehicle_communication +
                 '}';
@@ -40,4 +40,5 @@ public class RSU extends TrafficLightInformation {
     public int hashCode() {
         return Objects.hash(super.hashCode(), communication_radius);
     }
+
 }

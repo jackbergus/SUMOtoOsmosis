@@ -172,9 +172,9 @@ public class RunFullSimulator {
         for (int i = 0, N = traffic_lights.getLength(); i<N; i++) {
             var curr = traffic_lights.item(i).getAttributes();
             TrafficLightInformation tlInfo = new TrafficLightInformation();
-            tlInfo.id = curr.getNamedItem("id").getTextContent();
-            tlInfo.x = Double.parseDouble(curr.getNamedItem("x").getTextContent());
-            tlInfo.y = Double.parseDouble(curr.getNamedItem("y").getTextContent());
+            tlInfo.tl_id = curr.getNamedItem("id").getTextContent();
+            tlInfo.tl_x = Double.parseDouble(curr.getNamedItem("x").getTextContent());
+            tlInfo.tl_y = Double.parseDouble(curr.getNamedItem("y").getTextContent());
             tls.add(tlInfo);
         }
         //System.out.println(ls);
@@ -226,7 +226,7 @@ public class RunFullSimulator {
                     hasSomeResult = true;
                     inCurrentTime.putIfAbsent(currTime, new HashMap<>());
                     var lsx = new ArrayList<String>();
-                    inCurrentTime.get(currTime).put(x.id, lsx);
+                    inCurrentTime.get(currTime).put(x.tl_id, lsx);
                     for (var veh : distanceQueryResult) {
                         lsx.add(veh.id);
                         allDevices.add(veh.asIoDevice(conf.bw,
@@ -293,7 +293,7 @@ public class RunFullSimulator {
             flsF2.write("Id,X,Y");
             flsF2.newLine();
             for (var x : tls) {
-                flsF2.write(x.id+","+x.x+","+x.y);
+                flsF2.write(x.tl_id +","+x.tl_x +","+x.tl_y);
                 flsF2.newLine();
             }
             flsF2.close();

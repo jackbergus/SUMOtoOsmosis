@@ -6,8 +6,6 @@ import com.google.common.collect.Multimap;
 import com.google.ortools.sat.*;
 import io.jenetics.ext.moea.Pareto;
 import io.jenetics.ext.moea.ParetoFront;
-import it.unimi.dsi.fastutil.doubles.DoubleComparator;
-import it.unimi.dsi.fastutil.doubles.DoubleComparators;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
@@ -516,8 +514,8 @@ public class Problem {
                             }
                             var ls = updated.get(candidateRSU);
                             var sem = busyRSUToCandidates.getKey();
-                            double xDistX = (candidateRSU.x - sem.x),
-                                    xDistY = (candidateRSU.y - sem.y);
+                            double xDistX = (candidateRSU.tl_x - sem.tl_x),
+                                    xDistY = (candidateRSU.tl_y - sem.tl_y);
                             double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
                             return ((ls == null ? 0 : ls.size()) < (useLocalDemandForecast ? candidateRSU.max_vehicle_communication : averageOcccupacy)) &&
                                     (xDistSq < (candidateRSU.communication_radius * candidateRSU.communication_radius)) &&
@@ -594,8 +592,8 @@ public class Problem {
         double xAvail = candidateRankingAlternativeRSU.max_vehicle_communication - (ls == null ? 0 : ls.size());
         if (Math.abs(xAvail)>=Double.MIN_NORMAL) {
             double absAvail = Math.abs(xAvail);
-            double xDistX = (candidateRankingAlternativeRSU.x - busyRSU.x),
-                    xDistY = (candidateRankingAlternativeRSU.y - busyRSU.y);
+            double xDistX = (candidateRankingAlternativeRSU.tl_x - busyRSU.tl_x),
+                    xDistY = (candidateRankingAlternativeRSU.tl_y - busyRSU.tl_y);
             double xDistSq = (xDistX*xDistX)+(xDistY*xDistY);
             xDistSq = xDistSq / (xDistSq+1); // normalization
             return Math.signum(xAvail) * (absAvail / (absAvail + 1)) * xDistSq;
@@ -638,28 +636,12 @@ public class Problem {
                     ls.add(pq.peek());
                 }
                 if (ls.size() == 0) {
-
                     throw new RuntimeException(vehicles_communicating_with_nearest_RSUs.get(e).size()+"");
                 }
                 return ls;
             } else {
                 if (pq.isEmpty()) {
                     if (!vehicles_communicating_with_nearest_RSUs.get(e).isEmpty()) {
-                        for (int i = 0; i < rsus.size(); i++) {
-                        if (vehicles_communicating_with_nearest_RSUs.get(e).contains(rsus.get(i))) {
-                            var val = fun.apply(rsus.get(i));
-                            var cmp = rsus.get(i).max_vehicle_communication * rsus.get(i).max_vehicle_communication;
-                            throw new RuntimeException(rsus.get(i)+"");
-                        }
-                        if (fun.apply(rsus.get(i)) > rsus.get(i).max_vehicle_communication) continue;
-                        if (i < k) // add until heap is filled with k elements.
-                            pq.add(rsus.get(i));
-                        else if (comparator.compare(pq.peek(), rsus.get(i)) < 0) { // check if it's bigger than the
-                            // smallest element in the heap.
-                            pq.poll();
-                            pq.add(rsus.get(i));
-                        }
-                    }
                         throw new RuntimeException("ERROR!");
                     }
                 }

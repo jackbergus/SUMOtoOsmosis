@@ -102,7 +102,7 @@ public class CSVOsmosisRecord {
                             VehicleRecord veh,
                             SimulatorConf conf,
                             String aMelName) {
-        OsmesisApp = semaphore.id;
+        OsmesisApp = semaphore.tl_id;
         ID = semaphoreIdx;
         NumOfLayer = 3;
         DataRate_Sec = conf.DataRate_Sec;
@@ -115,7 +115,7 @@ public class CSVOsmosisRecord {
         datacenter = conf.datacenter;
         OsmesisEdgelet_MI = conf.OsmesisEdgelet_MI;
         MELOutputData_Mb = conf.MELOutputData_Mb;
-        VmName = semaphore.id;
+        VmName = semaphore.tl_id;
         datacenter_2 = conf.datacenter_2;
         OsmesisCloudlet_MI = String.valueOf(conf.OsmesisCloudlet_MI);
     }

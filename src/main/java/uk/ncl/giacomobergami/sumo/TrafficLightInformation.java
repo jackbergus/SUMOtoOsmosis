@@ -26,9 +26,9 @@ import uk.ncl.giacomobergami.utils.CartesianPoint;
 import java.util.Objects;
 
 public class TrafficLightInformation implements CartesianPoint {
-    public String id;
-    public double x;
-    public double y;
+    public String tl_id;
+    public double tl_x;
+    public double tl_y;
 
     public ConfiguationEntity.VMEntity asVMEntity(int pes,
                                                   double mips,
@@ -43,7 +43,7 @@ public class TrafficLightInformation implements CartesianPoint {
         result.setMips(mips);
         result.setRam(ram);
         result.setStorage(storage);
-        result.setName(id);
+        result.setName(tl_id);
         return result;
     }
 
@@ -52,31 +52,31 @@ public class TrafficLightInformation implements CartesianPoint {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TrafficLightInformation that = (TrafficLightInformation) o;
-        return Double.compare(that.x, x) == 0 && Double.compare(that.y, y) == 0 && Objects.equals(id, that.id);
+        return Double.compare(that.tl_x, tl_x) == 0 && Double.compare(that.tl_y, tl_y) == 0 && Objects.equals(tl_id, that.tl_id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, x, y);
+        return Objects.hash(tl_id, tl_x, tl_y);
     }
 
     @Override
     public String toString() {
         return "TrafficLightInformation{" +
-                "id='" + id + '\'' +
-                ", x=" + x +
-                ", y=" + y +
+                "id='" + tl_id + '\'' +
+                ", x=" + tl_x +
+                ", y=" + tl_y +
                 '}';
     }
 
 
     @Override
     public double getX() {
-        return x;
+        return tl_x;
     }
 
     @Override
     public double getY() {
-        return y;
+        return tl_y;
     }
 }
