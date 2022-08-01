@@ -17,6 +17,10 @@ public class Vehicle implements CartesianPoint {
         this.y = y;
     }
 
+    public Vehicle copy() {
+        return new Vehicle(id, x, y);
+    }
+
     @Override
     public double getX() {
         return x;

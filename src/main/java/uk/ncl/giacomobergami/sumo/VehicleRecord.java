@@ -118,6 +118,8 @@ public class VehicleRecord extends Vehicle {
         return Double.compare(that.x, x) == 0 && Double.compare(that.y, y) == 0 && Double.compare(that.angle, angle) == 0 && Double.compare(that.speed, speed) == 0 && Double.compare(that.pos, pos) == 0 && Double.compare(that.slope, slope) == 0 && Objects.equals(id, that.id) && Objects.equals(type, that.type) && Objects.equals(lane, that.lane);
     }
 
+
+
     @Override
     public int hashCode() {
         return Objects.hash(id, x, y, angle, type, speed, pos, lane, slope);

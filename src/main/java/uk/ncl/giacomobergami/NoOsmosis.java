@@ -27,6 +27,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.ortools.Loader;
+import org.apache.commons.lang3.tuple.Pair;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
 import org.jblas.DoubleMatrix;
 import org.w3c.dom.Document;
@@ -34,6 +35,7 @@ import org.w3c.dom.Node;
 import uk.ncl.giacomobergami.algorithmics.CartesianProduct;
 import uk.ncl.giacomobergami.algorithmics.ClusterDifference;
 import uk.ncl.giacomobergami.osmosis.CSVOsmosisRecord;
+import uk.ncl.giacomobergami.osmosis.RSUProgram;
 import uk.ncl.giacomobergami.osmosis.VehicularProgram;
 import uk.ncl.giacomobergami.solver.ConcretePair;
 import uk.ncl.giacomobergami.solver.Problem;
@@ -42,6 +44,7 @@ import uk.ncl.giacomobergami.solver.Vehicle;
 import uk.ncl.giacomobergami.sumo.VehicleRecord;
 import uk.ncl.giacomobergami.utils.CartesianDistanceFunction;
 import uk.ncl.giacomobergami.utils.SimulatorConf;
+import uk.ncl.giacomobergami.utils.StringComparator;
 import uk.ncl.giacomobergami.utils.XPathUtil;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -206,7 +209,7 @@ public class NoOsmosis {
                     rec.type = (attrs.getNamedItem("type").getTextContent());
                     rec.lane = (attrs.getNamedItem("lane").getTextContent());
                     vehs.add(rec);
-                    intersectingVehicles.add(rec);
+                    intersectingVehicles.add(rec.copy());
                 }
             }
             if (vehs.isEmpty()) continue;
@@ -218,7 +221,6 @@ public class NoOsmosis {
             if (solver.init(allDevices, allDestinations)) { // also, re-setting the time benchmark
                 int expectedTotalVehs = allDevices.size();
                 ArrayList<Problem.Solution> sol;
-//                HashMap<RSU, List<Vehicle>> res = new HashMap<>();
                 if (conf.isDo_thresholding()) {
                     if (conf.use_nearest_MEL_to_IoT) {
                         solver.setNearestMELForIoT();
@@ -244,13 +246,6 @@ public class NoOsmosis {
                 }
                 problemSolvingTime.put(currTime, solver.getRunTime());
                 simulationSolutions.put(currTime, sol);
-                for (var potentialSolution : sol) {
-                    for (var vehicleToRSU : potentialSolution.getAlphaAssociation()) {
-                        if (!potentialSolution.res.containsKey(vehicleToRSU.getValue()))
-                            potentialSolution.res.put(vehicleToRSU.getValue(), new ArrayList<>());
-                        potentialSolution.res.get(vehicleToRSU.getValue()).add(vehicleToRSU.getKey());
-                    }
-                }
 //                Set<Vehicle> sv = new HashSet<>();
 //                res.forEach((k, v)-> sv.addAll(v));
 //                System.out.println(sv.size()+" vs. "+expectedTotalVehs);
@@ -301,10 +296,11 @@ public class NoOsmosis {
 
         System.out.println("Computing all of the possible Pareto Routing scenarios...");
         var allThePossibleSolutions = CartesianProduct.mapCartesianProduct(simulationSolutions);
+        simulationSolutions = null;
         Map<Double, Problem.Solution> bestResult = null;
         Double bestResultScore = Double.MAX_VALUE;
-        TreeMap<Double, HashMap<String, List<String>>> inStringTime = null;
-        HashMap<Double, HashMap<RSU, List<Vehicle>>> inCurrentTime = null;
+        TreeMap<Double, Map<String, List<String>>> inStringTime = null;
+        HashMap<Double, Map<RSU, List<Vehicle>>> inCurrentTime = null;
         HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> delta_associations = null;
         if (allThePossibleSolutions.size() == 0) {
             System.err.println("NO viable solution found!");
@@ -316,18 +312,18 @@ public class NoOsmosis {
                     System.out.print(i+"... ");
                     System.out.flush();
                 }
-                HashMap<Double, HashMap<RSU, List<Vehicle>>> local_inCurrentTime = new HashMap<>();
-                TreeMap<Double, HashMap<String, List<String>>> local_inStringTime = new TreeMap<>();
-                TreeMap<Double, HashMap<String, List<String>>> vehClustAssoc = new TreeMap<>();
+                HashMap<Double, Map<RSU, List<Vehicle>>> local_inCurrentTime = new HashMap<>();
+                TreeMap<Double, Map<String, List<String>>> local_inStringTime = new TreeMap<>();
+                TreeMap<Double, Map<String, List<String>>> vehClustAssoc = new TreeMap<>();
 
                 for (var timeToSolution : candidateSolution.entrySet()) {
                     HashMap<String, List<String>> map = new HashMap<>(), map2 = new HashMap<>();
                     var currTime = timeToSolution.getKey();
-                    local_inCurrentTime.put(currTime, timeToSolution.getValue().res);
+                    local_inCurrentTime.put(currTime, timeToSolution.getValue().rsuToCommunicatingVehiclesCluster);
                     local_inStringTime.put(currTime, map);
                     vehClustAssoc.put(currTime, map2);
 
-                    for (var y : timeToSolution.getValue().res.entrySet()) {
+                    for (var y : timeToSolution.getValue().rsuToCommunicatingVehiclesCluster.entrySet()) {
                         List<String> ls = new ArrayList<>();
                         map.put(y.getKey().tl_id, ls);
                         for (var z : y.getValue()) {
@@ -341,12 +337,7 @@ public class NoOsmosis {
                 }
 
                 // getting the simulation program associated to each vehicle
-                HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> local_delta_associations = ClusterDifference.diff(vehClustAssoc, veh_s, (o1, o2) -> {
-                    if (Objects.equals(o1, o2)) return 0;
-                    if (o1 == null) return -1;
-                    else if (o2 == null) return 1;
-                    else return o1.compareTo(o2);
-                });
+                HashMap<String, ConcretePair<ConcretePair<Double, List<String>>, List<ClusterDifference<String>>>> local_delta_associations = ClusterDifference.diff(vehClustAssoc, veh_s, StringComparator.getInstance());
 
                 double totalChangePerVehicle = 0.0;
                 // Among these, we prefer a solution minimizing the size of the deta_associations, for all of the vehicles
@@ -365,23 +356,44 @@ public class NoOsmosis {
                 i++;
             }
 
-            // This concept is relevant, so if we need to remove some nodes from the simulation,
-            // and to add others
-            var delta_clusters = ClusterDifference.diff(inStringTime, tls_s, (o1, o2) -> {
-                if (Objects.equals(o1, o2)) return 0;
-                if (o1 == null) return -1;
-                else if (o2 == null) return 1;
-                else return o1.compareTo(o2);
-            });
-
-            HashMap<Vehicle, VehicularProgram> programHashMap = new HashMap<>();
+            // SETTING UP THE VEHICULAR PROGRAMS
+            HashMap<String, VehicularProgram> vehProgramHashMap = new HashMap<>();
             for (var veh : intersectingVehicles) {
                 var vehProgram = new VehicularProgram(delta_associations.get(veh.id));
-                for (var entry : bestResult.entrySet() ){
-                    vehProgram.put(entry.getKey(), entry.getValue().retrievePath(veh));
+                for (var entry : bestResult.entrySet()){
+                    vehProgram.putDeltaRSUAssociation(entry.getKey(), entry.getValue().slowRetrievePath(veh));
                 }
                 vehProgram.finaliseProgram();
-                programHashMap.put(veh, vehProgram);
+                vehProgramHashMap.put(veh.id, vehProgram);
+            }
+
+            TreeMap<Double, Map<String, List<String>>> networkTopology = new TreeMap<>(); // Actually, for RSU programs: saving one iteration cycle
+            for (var entry : bestResult.entrySet()){
+                var npMap = entry.getValue()
+                     .RSUNetworkNeighbours
+                     .entrySet()
+                     .stream()
+                     .map(x -> new ConcretePair<>(x.getKey().tl_id,
+                             x.getValue().stream().map(y -> y.tl_id).collect(Collectors.toList())))
+                        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+                networkTopology.put(entry.getKey(), npMap);
+                for (var vehs : entry.getValue().getAlphaAssociation()) {
+                    vehProgramHashMap.get(vehs.getKey().id).setLocalInformation(entry.getKey(), (VehicleRecord) vehs.getKey());
+                }
+            }
+
+            // SETTING UP THE RSU PROGRAMS
+            // This concept is relevant, so if we need to remove some nodes from the simulation,
+            // and to add others. This also defines with which MELs and Vehicles should an element connect/disconnect
+            // for its routing
+            HashMap<String, RSUProgram> rsuProgramHashMap = new HashMap<>();
+            var delta_clusters = ClusterDifference.diff(inStringTime, tls_s, StringComparator.getInstance());
+            var delta_network_neighbours = ClusterDifference.diff(networkTopology, tls_s, StringComparator.getInstance());
+
+            for (var r : tls) {
+                var rsuProgram = new RSUProgram(bestResult.keySet());
+                rsuProgram.finaliseProgram(delta_clusters.get(r.tl_id), delta_network_neighbours.get(r.tl_id));
+                rsuProgramHashMap.put(r.tl_id, rsuProgram);
             }
 
             // TODO: simulation using programHashMap
@@ -402,8 +414,10 @@ public class NoOsmosis {
             Files.writeString(intersection_file_python, gson.toJson(inCurrentTime));
 
 
-            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_clusters.json"), gson.toJson(new HashMap<>(delta_clusters)));
-            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_assocs.json"), gson.toJson(new HashMap<>(delta_associations)));
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_clusters.json"), gson.toJson(delta_clusters));
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_delta_assocs.json"), gson.toJson(delta_associations));
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_iot_programs.json"), gson.toJson(vehProgramHashMap));
+            Files.writeString(Paths.get(new File(conf.OsmosisOutput).getAbsolutePath(), conf.experimentName+"_rsu_programs.json"), gson.toJson(rsuProgramHashMap));
 
 
             {

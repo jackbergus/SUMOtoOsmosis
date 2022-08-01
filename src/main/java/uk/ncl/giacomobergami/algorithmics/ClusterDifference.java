@@ -124,7 +124,7 @@ public class ClusterDifference<T> implements Predicate<T> {
     }
 
     public static <H, K, T> ConcretePair<ConcretePair<H, List<T>>, List<ClusterDifference<T>>>
-    diff(Map<H, HashMap<K, List<T>>> toDiff,
+    diff(Map<H, Map<K, List<T>>> toDiff,
          K holder,
          Comparator<T>tmp) {
         boolean first = true;
@@ -146,7 +146,7 @@ public class ClusterDifference<T> implements Predicate<T> {
     }
 
     public static <H, K, T> HashMap<K, ConcretePair<ConcretePair<H, List<T>>, List<ClusterDifference<T>>>>
-    diff(Map<H, HashMap<K, List<T>>> toDiff,
+    diff(Map<H, Map<K, List<T>>> toDiff,
          Collection<K> holder,
          Comparator<T>tmp) {
         HashMap<K, ConcretePair<ConcretePair<H, List<T>>, List<ClusterDifference<T>>>> res = new HashMap<>();
@@ -168,7 +168,7 @@ public class ClusterDifference<T> implements Predicate<T> {
         return result;
     }
 
-    public static <H, K, T> void test(Map<H, HashMap<K, List<T>>> toDiff,
+    public static <H, K, T> void test(Map<H, Map<K, List<T>>> toDiff,
                                                             List<K> holderList,
                                                             Comparator<T> cmp) {
         for (K k : holderList) {

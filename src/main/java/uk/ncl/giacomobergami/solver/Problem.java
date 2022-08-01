@@ -1,6 +1,8 @@
 package uk.ncl.giacomobergami.solver;
 
 import com.eatthepath.jvptree.VPTree;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.jenetics.ext.moea.Pareto;
 import io.jenetics.ext.moea.ParetoFront;
 import org.cloudbus.cloudsim.edge.core.edge.ConfiguationEntity;
@@ -25,7 +27,6 @@ public class Problem {
     Map<Vehicle, ArrayList<RSU>> vehicles_communicating_with_nearest_RSUs;
     Random rd;
     long run_time;
-//    CpModel model;
 
     public Problem(List<Vehicle> vehicles,
                    List<RSU> rsus,
@@ -38,7 +39,6 @@ public class Problem {
         targetCommunication = Collections.emptyList();
         flow = new MinCostMaxFlow();
         rd = new Random();
-//        model = new CpModel();
     }
 
     public ArrayList<Solution> multi_objective_pareto(double k1, double k2, boolean reduceToOne) {
@@ -63,7 +63,12 @@ public class Problem {
         Map<Vehicle, RSU> firstMileCommunication;
         Map<Vehicle, RSU> alphaAssociation;
         private final Map<Vehicle, List<Union2<Vehicle, RSU>>> vehicularPaths;
-        public HashMap<RSU, List<Vehicle>> res;
+        public final Map<RSU, List<RSU>> RSUNetworkNeighbours;
+        public HashMap<RSU, List<Vehicle>> rsuToCommunicatingVehiclesCluster;
+
+        public Solution(IntermediateSolution v, ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>> cp) {
+            this(v.objectives, cp.getKey(), cp.getValue(), v.communicationPaths, v.RSUNetworkNeighbours);
+        }
 
         public Set<Map.Entry<Vehicle, RSU>> getAlphaAssociation() {
             return alphaAssociation.entrySet();
@@ -72,15 +77,17 @@ public class Problem {
         public Solution(double[] obj,
                         Map<Vehicle, RSU> firstMileCommunication,
                         Map<Vehicle, RSU> alphaAssociation,
-                        Map<Vehicle, List<Union2<Vehicle, RSU>>> vehicularPaths) {
+                        Map<Vehicle, List<Union2<Vehicle, RSU>>> vehicularPaths,
+                        Map<RSU, List<RSU>> RSUNetworkNeighbours) {
             this.obj = obj;
             this.firstMileCommunication = firstMileCommunication;
             this.alphaAssociation = alphaAssociation;
             this.vehicularPaths = vehicularPaths;
-            this.res = new HashMap<>();
+            this.RSUNetworkNeighbours = RSUNetworkNeighbours;
+            this.rsuToCommunicatingVehiclesCluster = new HashMap<>();
         }
 
-        public List<Union2<Vehicle, RSU>> retrievePath(Vehicle x) {
+        public List<Union2<Vehicle, RSU>> slowRetrievePath(Vehicle x) {
             for (var tempt : vehicularPaths.entrySet()) {
                 if (tempt.getKey().id.equals(x.id))
                     return tempt.getValue();
@@ -121,8 +128,8 @@ public class Problem {
                                                        boolean reduceToOne,
                                                        boolean updateAfterFlow) {
         long startTime = System.currentTimeMillis();
-        final ArrayList<Solution> solution = new ArrayList<>();
-        final ArrayList<ConcretePair<double[], Map<Vehicle, List<Union2<Vehicle, RSU>>>>> all = new ArrayList<>();
+        final ArrayList<Solution> solutionList = new ArrayList<>();
+        final ArrayList<IntermediateSolution> all = new ArrayList<>();
         final ArrayList<ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>>> allPossiblePairs = new ArrayList<>();
 
         for (Map<Vehicle, RSU> firstCommunication : this.firstMileCommunication) {
@@ -145,27 +152,50 @@ public class Problem {
             }
             final ParetoFront<double[]> front = new ParetoFront<>(dominance);
             System.out.println("\nParetoing...\n");
-            all.forEach(x -> front.add(x.key));
+            all.forEach(x -> front.add(x.objectives));
             double[] prev = new double[]{Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE};
             for (int i = 0, N = all.size(); i<N; i++) {
                 var v = all.get(i);
-                if (front.contains(v.key)) {
+                if (front.contains(v.objectives)) {
                     var cp = allPossiblePairs.get(i);
-                    if (solution.isEmpty() || (!reduceToOne))
-                        solution.add(new Solution(v.key, cp.getKey(), cp.getValue(), v.value));
-                    else if (prev[0] >= v.key[0] && prev[1] >= v.key[1] && prev[2] >= v.key[2]) {
-                        solution.set(0, new Solution(v.key, cp.getKey(), cp.getValue(), v.value));
-                        prev = v.key;
+                    if (solutionList.isEmpty() || (!reduceToOne))
+                        solutionList.add(new Solution(v, cp));
+                    else if (prev[0] >= v.objectives[0] && prev[1] >= v.objectives[1] && prev[2] >= v.objectives[2]) {
+                        solutionList.set(0, new Solution(v, cp));
+                        prev = v.objectives;
                     }
                 }
             }
         }
-        System.out.println("Solution found: " + solution.size() + " over " + all.size());
+
+        for (var potentialSolution : solutionList) {
+            for (var vehicleToRSU : potentialSolution.getAlphaAssociation()) {
+                if (!potentialSolution.rsuToCommunicatingVehiclesCluster.containsKey(vehicleToRSU.getValue()))
+                    potentialSolution.rsuToCommunicatingVehiclesCluster.put(vehicleToRSU.getValue(), new ArrayList<>());
+                potentialSolution.rsuToCommunicatingVehiclesCluster.get(vehicleToRSU.getValue()).add(vehicleToRSU.getKey());
+            }
+        }
+
         run_time += (System.currentTimeMillis() - startTime);
-        return solution;
+        System.out.println("Solution found: " + solutionList.size() + " over " + all.size());
+        return solutionList;
     }
 
-    private ConcretePair<double[], Map<Vehicle, List<Union2<Vehicle, RSU>>>> computeRanking(double k1,
+    private class IntermediateSolution {
+        private final double[] objectives;
+        private final Map<Vehicle, List<Union2<Vehicle, RSU>>> communicationPaths;
+        private final Map<RSU, List<RSU>> RSUNetworkNeighbours;
+
+        public IntermediateSolution(double[] objectives,
+                                    Map<Vehicle, List<Union2<Vehicle, RSU>>> communicationPaths,
+                                    Map<RSU, List<RSU>> RSUNetworkNeighbours) {
+            this.objectives = objectives;
+            this.communicationPaths = communicationPaths;
+            this.RSUNetworkNeighbours = RSUNetworkNeighbours;
+        }
+    }
+
+    private IntermediateSolution computeRanking(double k1,
                                                                                     double k2,
                                                                                     boolean ignoreCubic,
                                                                                     ConcretePair<Map<Vehicle, RSU>, Map<Vehicle, RSU>> pair,
@@ -190,6 +220,7 @@ public class Problem {
         Map<String, Vehicle> vehNameToVeh = new HashMap<>();
         Map<String, RSU> rsuNameToRSU = new HashMap<>();
         Map<Vehicle, List<Union2<Vehicle, RSU>>> paths = new HashMap<>();
+        Map<RSU, List<RSU>> RSUNetworkNeighbours = new HashMap<>();
 
         // Making all of the rsus as nodes of the graph, as we can distribute the load
         // within the network
@@ -224,6 +255,14 @@ public class Problem {
 
                     // we can establish a link if and only if they are respectively within their communication radius
                     if (d <= Math.min(sq1, sq2)) {
+                        if (!RSUNetworkNeighbours.containsKey(rsu1)) {
+                            RSUNetworkNeighbours.put(rsu1, new ArrayList<>());
+                        }
+                        if (!RSUNetworkNeighbours.containsKey(rsu2)) {
+                            RSUNetworkNeighbours.put(rsu2, new ArrayList<>());
+                        }
+                        RSUNetworkNeighbours.get(rsu1).add(rsu2);
+                        RSUNetworkNeighbours.get(rsu2).add(rsu1);
                         // The communication capacity is capped at the minimum communicative threshold being shared
                         capacity[r1][r2] = capacity[r2][r1] = (int) Math.min(rsu1.max_vehicle_communication, rsu2.max_vehicle_communication);
                         // The communication cost is directly proportional to the nodes' distance
@@ -321,8 +360,16 @@ public class Problem {
                 throw new RuntimeException("That should have fixed the problem! " + paths.size()+ " vs "+ pair.key.size());
             }
         }
+
+        var it = RSUNetworkNeighbours.entrySet().iterator();
+        while (it.hasNext()) {
+            var x = it.next();
+            x.setValue(Lists.newArrayList(Sets.newHashSet(x.getValue())));
+        }
         obj_network = result.total_cost;
-        return new ConcretePair<>(new double[]{obj_IoT, obj_mel, obj_network}, paths);
+        return new IntermediateSolution(new double[]{obj_IoT, obj_mel, obj_network},
+                                        paths,
+                                        RSUNetworkNeighbours);
     }
 
     private List<Integer> updatePathWithFeasibleOne(Map<Vehicle, Integer> vehs,
